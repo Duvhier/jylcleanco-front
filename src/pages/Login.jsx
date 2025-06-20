@@ -7,9 +7,14 @@ import {
   TextField,
   Button,
   Typography,
-  Box
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,6 +23,9 @@ const Login = () => {
     email: '',
     password: ''
   });
+  const [openForgot, setOpenForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [loadingForgot, setLoadingForgot] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -34,6 +42,20 @@ const Login = () => {
       navigate('/');
     } catch (error) {
       toast.error(error.message || 'Error al iniciar sesión');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setLoadingForgot(true);
+    try {
+      await axios.post('http://localhost:5000/api/auth/forgot-password', { email: forgotEmail });
+      toast.success('Si el correo existe, se ha enviado un enlace de recuperación.');
+      setOpenForgot(false);
+      setForgotEmail('');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al enviar el correo de recuperación');
+    } finally {
+      setLoadingForgot(false);
     }
   };
 
@@ -85,8 +107,36 @@ const Login = () => {
           >
             ¿No tienes cuenta? Regístrate
           </Button>
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => setOpenForgot(true)}
+            sx={{ mt: 1, color: '#1976d2', fontWeight: 'bold' }}
+          >
+            ¿Olvidaste tu contraseña?
+          </Button>
         </Box>
       </Paper>
+      <Dialog open={openForgot} onClose={() => setOpenForgot(false)}>
+        <DialogTitle>Recuperar contraseña</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Correo electrónico"
+            type="email"
+            fullWidth
+            value={forgotEmail}
+            onChange={e => setForgotEmail(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenForgot(false)}>Cancelar</Button>
+          <Button onClick={handleForgotPassword} disabled={loadingForgot} variant="contained" color="primary">
+            {loadingForgot ? 'Enviando...' : 'Enviar enlace'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

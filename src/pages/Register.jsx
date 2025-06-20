@@ -21,6 +21,8 @@ const Register = () => {
     confirmPassword: ''
   });
 
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -31,6 +33,10 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!passwordRegex.test(formData.password)) {
+      toast.error('La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.');
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       toast.error('Las contraseñas no coinciden');
       return;
