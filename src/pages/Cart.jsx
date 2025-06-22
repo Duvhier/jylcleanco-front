@@ -12,7 +12,9 @@ import {
   Button,
   Box,
   TextField,
-  Divider
+  Divider,
+  Avatar,
+  Paper
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -117,79 +119,105 @@ const Cart = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Carrito de Compras
-      </Typography>
+      <Paper
+        elevation={4}
+        sx={{
+          backdropFilter: 'blur(10px)',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          padding: '32px',
+          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+        }}
+      >
+        <Typography variant="h4" gutterBottom sx={{ color: '#fff', textShadow: '1px 1px 2px #000' }}>
+          Carrito de Compras
+        </Typography>
 
-      {cart.products.length === 0 ? (
-        <Typography>Tu carrito está vacío</Typography>
-      ) : (
-        <>
-          <List>
-            {cart.products.map((item) => (
-              <ListItem key={item.product._id}>
-                <ListItemText
-                  primary={item.product.name}
-                  secondary={`$${item.product.price} x ${item.quantity}`}
-                />
-                <ListItemSecondaryAction>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <IconButton
-                      onClick={() => handleUpdateQuantity(item.product._id, item.quantity - 1)}
-                    >
-                      <RemoveIcon />
-                    </IconButton>
-                    <TextField
-                      value={item.quantity}
-                      onChange={(e) => handleUpdateQuantity(item.product._id, parseInt(e.target.value))}
-                      type="number"
-                      size="small"
-                      sx={{ width: '60px', mx: 1 }}
-                    />
-                    <IconButton
-                      onClick={() => handleUpdateQuantity(item.product._id, item.quantity + 1)}
-                    >
-                      <AddIcon />
-                    </IconButton>
-                    <IconButton
-                      edge="end"
-                      onClick={() => handleRemoveItem(item.product._id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </ListItemSecondaryAction>
-              </ListItem>
-            ))}
-          </List>
+        {cart.products.length === 0 ? (
+          <Typography sx={{ color: '#fff' }}>Tu carrito está vacío</Typography>
+        ) : (
+          <>
+            <List>
+              {cart.products.map((item) => (
+                <ListItem key={item.product._id} sx={{ bgcolor: 'rgba(255,255,255,0.1)', mb: 1, borderRadius: 2 }}>
+                  <Avatar
+                    src={item.product.image || item.product.imageUrl}
+                    alt={item.product.name}
+                    sx={{ width: 56, height: 56, mr: 2 }}
+                  />
+                  <ListItemText
+                    primary={item.product.name}
+                    secondary={`$${item.product.price} x ${item.quantity}`}
+                    sx={{ color: '#fff' }}
+                  />
+                  <ListItemSecondaryAction>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <IconButton
+                        onClick={() => handleUpdateQuantity(item.product._id, item.quantity - 1)}
+                        sx={{ color: '#fff' }}
+                      >
+                        <RemoveIcon />
+                      </IconButton>
+                      <TextField
+                        value={item.quantity}
+                        onChange={(e) => handleUpdateQuantity(item.product._id, parseInt(e.target.value))}
+                        type="number"
+                        size="small"
+                        sx={{
+                          width: '60px',
+                          mx: 1,
+                          input: { color: '#fff', textAlign: 'center' },
+                          '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' }
+                        }}
+                      />
+                      <IconButton
+                        onClick={() => handleUpdateQuantity(item.product._id, item.quantity + 1)}
+                        sx={{ color: '#fff' }}
+                      >
+                        <AddIcon />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        onClick={() => handleRemoveItem(item.product._id)}
+                        sx={{ color: '#ff5555' }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
 
-          <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.3)' }} />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              Total: ${total.toFixed(2)}
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ color: '#fff' }}>
+                Total: ${total.toFixed(2)}
+              </Typography>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleClearCart}
+              >
+                Vaciar Carrito
+              </Button>
+            </Box>
+
             <Button
-              variant="outlined"
-              color="error"
-              onClick={handleClearCart}
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={handleCheckout}
             >
-              Vaciar Carrito
+              Realizar Compra
             </Button>
-          </Box>
-
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handleCheckout}
-          >
-            Realizar Compra
-          </Button>
-        </>
-      )}
+          </>
+        )}
+      </Paper>
     </Container>
   );
 };
 
-export default Cart; 
+export default Cart;

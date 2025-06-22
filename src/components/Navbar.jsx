@@ -14,56 +14,220 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="static" sx={{ background: 'linear-gradient(90deg, #0d47a1 60%, #1976d2 100%)', boxShadow: '0 4px 16px rgba(13,71,161,0.15)' }}>
+    <AppBar 
+      position="static" 
+      className="glass-navbar"
+      sx={{ 
+        background: 'rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+      }}
+    >
       <Toolbar>
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
           <img
             src="src/public/images/logo.png"
             alt="Logo J&L Clean Co."
-            style={{ height: 40, marginRight: 12 }}
+            style={{ height: 100, marginRight: 12 }}
           />
-          <Typography variant="h5" component="div" className="bebas-navbar" sx={{ letterSpacing: 2, color: '#fff', fontWeight: 700 }}>
+          <Typography 
+            variant="h5" 
+            component="div" 
+            className="bebas-navbar" 
+            sx={{ 
+              letterSpacing: 2, 
+              color: '#fff', 
+              fontWeight: 700,
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+            }}
+          >
             J&L Clean Co.
           </Typography>
         </Box>
         
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button color="inherit" onClick={() => navigate('/')}>
+          <Button 
+            className="glass-button"
+            sx={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              color: '#fff',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.2)',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+              }
+            }}
+            onClick={() => navigate('/')}
+          >
             Inicio
           </Button>
           
-          <Button color="inherit" onClick={() => navigate('/products')}>
+          <Button 
+            className="glass-button"
+            sx={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              color: '#fff',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.2)',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+              }
+            }}
+            onClick={() => navigate('/products')}
+          >
             Productos
           </Button>
 
           {isAuthenticated ? (
             <>
-              <Button color="inherit" onClick={() => navigate('/cart')}>
+              <Button 
+                className="glass-button"
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                  }
+                }}
+                onClick={() => navigate('/cart')}
+              >
                 Carrito
               </Button>
 
               {(user.role === 'Admin' || user.role === 'SuperUser') && (
-                <Button color="inherit" onClick={() => navigate('/admin')}>
+                <Button 
+                  className="glass-button"
+                  sx={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      borderColor: 'rgba(255, 255, 255, 0.3)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                    }
+                  }}
+                  onClick={() => navigate('/admin')}
+                >
                   Panel Admin
                 </Button>
               )}
 
               {user.role === 'SuperUser' && (
-                <Button color="inherit" onClick={() => navigate('/superuser')}>
+                <Button 
+                  className="glass-button"
+                  sx={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      borderColor: 'rgba(255, 255, 255, 0.3)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                    }
+                  }}
+                  onClick={() => navigate('/superuser')}
+                >
                   Panel SuperUser
                 </Button>
               )}
 
-              <Button color="inherit" onClick={handleLogout}>
+              <Button 
+                className="glass-button"
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                  }
+                }}
+                onClick={handleLogout}
+              >
                 Cerrar Sesión
               </Button>
             </>
           ) : (
             <>
-              <Button color="inherit" onClick={() => navigate('/login')}>
+              <Button 
+                className="glass-button"
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                  }
+                }}
+                onClick={() => navigate('/login')}
+              >
                 Iniciar Sesión
               </Button>
-              <Button color="inherit" onClick={() => navigate('/register')}>
+              <Button 
+                className="glass-button"
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+                  }
+                }}
+                onClick={() => navigate('/register')}
+              >
                 Registrarse
               </Button>
             </>
