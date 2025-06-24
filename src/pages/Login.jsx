@@ -26,6 +26,7 @@ const Login = () => {
   const [openForgot, setOpenForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [loadingForgot, setLoadingForgot] = useState(false);
+  const [modalMsg, setModalMsg] = useState({ open: false, message: '', type: 'info' });
 
   const handleChange = (e) => {
     setFormData({
@@ -38,10 +39,10 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(formData.email, formData.password);
-      toast.success('Inicio de sesión exitoso');
+      setModalMsg({ open: true, message: 'Inicio de sesión exitoso', type: 'success' });
       navigate('/');
     } catch (error) {
-      toast.error(error.message || 'Error al iniciar sesión');
+      setModalMsg({ open: true, message: error.message || 'Error al iniciar sesión', type: 'error' });
     }
   };
 
@@ -49,11 +50,11 @@ const Login = () => {
     setLoadingForgot(true);
     try {
       await axios.post('http://localhost:5000/api/auth/forgot-password', { email: forgotEmail });
-      toast.success('Si el correo existe, se ha enviado un enlace de recuperación.');
+      setModalMsg({ open: true, message: 'Si el correo existe, se ha enviado un enlace de recuperación.', type: 'success' });
       setOpenForgot(false);
       setForgotEmail('');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al enviar el correo de recuperación');
+      setModalMsg({ open: true, message: error.response?.data?.message || 'Error al enviar el correo de recuperación', type: 'error' });
     } finally {
       setLoadingForgot(false);
     }
@@ -339,6 +340,16 @@ const Login = () => {
           >
             {loadingForgot ? 'Enviando...' : 'Enviar enlace'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={modalMsg.open} onClose={() => setModalMsg({ ...modalMsg, open: false })}>
+        <DialogTitle>{modalMsg.type === 'success' ? 'Éxito' : 'Error'}</DialogTitle>
+        <DialogContent>
+          <Typography>{modalMsg.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModalMsg({ ...modalMsg, open: false })}>Cerrar</Button>
         </DialogActions>
       </Dialog>
     </Container>

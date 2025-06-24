@@ -303,7 +303,7 @@ const Home = () => {
                   className="bebas"
                   sx={{ color: '#fff', fontSize: 28, textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}
                 >
-                  Crema Hidratante
+                  Crema Facial Hidratante
                 </Typography>
                 <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}>
                   PRECIO $18.000-$24.000

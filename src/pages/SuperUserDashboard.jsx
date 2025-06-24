@@ -25,6 +25,7 @@ import {
   InputLabel
 } from '@mui/material';
 import axios from 'axios';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 const SuperUserDashboard = () => {
   const [tab, setTab] = useState(0);
@@ -127,116 +128,126 @@ const SuperUserDashboard = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Panel de SuperUsuario
-      </Typography>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)}>
-          <Tab label="Usuarios" />
-          <Tab label="Productos" />
-          <Tab label="Ventas" />
-        </Tabs>
-      </Box>
-
-      {tab === 0 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Usuario</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Rol</TableCell>
-                <TableCell>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user._id}>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleEditUser(user)}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      onClick={() => handleDeleteUser(user._id)}
-                      sx={{ ml: 1 }}
-                    >
-                      Eliminar
-                    </Button>
-                  </TableCell>
+    <Box sx={{ p: 4, minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', backgroundAttachment: 'fixed' }}>
+      <Paper elevation={0} sx={{ mb: 4, p: 3, display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(255,255,255,0.18)', borderRadius: 3, boxShadow: '0 2px 12px rgba(25,118,210,0.10)' }}>
+        <EmojiEventsIcon sx={{ fontSize: 40, color: '#ffd600', mr: 1 }} />
+        <Box>
+          <Typography variant="h5" sx={{ color: '#1976d2', fontWeight: 700, letterSpacing: 1, mb: 0.5 }}>
+            ¡Bienvenido/a al Panel de SuperUsuario!
+          </Typography>
+          <Typography sx={{ color: '#333', opacity: 0.8, fontSize: 16 }}>
+            Administra usuarios, productos y ventas con todas las herramientas avanzadas a tu disposición.
+          </Typography>
+        </Box>
+      </Paper>
+      <Paper elevation={4} sx={{ p: 4, borderRadius: 4, background: 'rgba(255,255,255,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', mb: 4 }}>
+        <Typography variant="h3" sx={{ color: '#1976d2', fontWeight: 700, letterSpacing: 2, mb: 2, textShadow: '0 2px 8px rgba(25,118,210,0.15)' }}>
+          Panel de SuperUsuario
+        </Typography>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)}>
+            <Tab label="Usuarios" />
+            <Tab label="Productos" />
+            <Tab label="Ventas" />
+          </Tabs>
+        </Box>
+        {tab === 0 && (
+          <TableContainer component={Paper} sx={{ background: 'rgba(255,255,255,0.18)', borderRadius: 3, boxShadow: '0 4px 24px rgba(25,118,210,0.08)' }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ background: 'rgba(25,118,210,0.08)' }}>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Usuario</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Email</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Rol</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Acciones</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {tab === 1 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Nombre</TableCell>
-                <TableCell>Descripción</TableCell>
-                <TableCell>Precio</TableCell>
-                <TableCell>Stock</TableCell>
-                <TableCell>Categoría</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {products.map((product) => (
-                <TableRow key={product._id}>
-                  <TableCell>{product.name}</TableCell>
-                  <TableCell>{product.description}</TableCell>
-                  <TableCell>${product.price}</TableCell>
-                  <TableCell>{product.stock}</TableCell>
-                  <TableCell>{product.category}</TableCell>
+              </TableHead>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user._id} sx={{ transition: 'background 0.2s', '&:hover': { background: 'rgba(25,118,210,0.07)' } }}>
+                    <TableCell>{user.username}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.role}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleEditUser(user)}
+                        sx={{ mr: 1, borderRadius: 2 }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => handleDeleteUser(user._id)}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Eliminar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+        {tab === 1 && (
+          <TableContainer component={Paper} sx={{ background: 'rgba(255,255,255,0.18)', borderRadius: 3, boxShadow: '0 4px 24px rgba(25,118,210,0.08)' }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ background: 'rgba(25,118,210,0.08)' }}>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Nombre</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Descripción</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Precio</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Stock</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Categoría</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {tab === 2 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Usuario</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Estado</TableCell>
-                <TableCell>Fecha</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sales.map((sale) => (
-                <TableRow key={sale._id}>
-                  <TableCell>{sale._id}</TableCell>
-                  <TableCell>{sale.user.username}</TableCell>
-                  <TableCell>${sale.total}</TableCell>
-                  <TableCell>{sale.status}</TableCell>
-                  <TableCell>
-                    {new Date(sale.createdAt).toLocaleDateString()}
-                  </TableCell>
+              </TableHead>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product._id} sx={{ transition: 'background 0.2s', '&:hover': { background: 'rgba(25,118,210,0.07)' } }}>
+                    <TableCell>{product.name}</TableCell>
+                    <TableCell>{product.description}</TableCell>
+                    <TableCell>${product.price}</TableCell>
+                    <TableCell>{product.stock}</TableCell>
+                    <TableCell>{product.category}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+        {tab === 2 && (
+          <TableContainer component={Paper} sx={{ background: 'rgba(255,255,255,0.18)', borderRadius: 3, boxShadow: '0 4px 24px rgba(25,118,210,0.08)' }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ background: 'rgba(25,118,210,0.08)' }}>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>ID</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Usuario</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Total</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Estado</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1976d2' }}>Fecha</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+              </TableHead>
+              <TableBody>
+                {sales.map((sale) => (
+                  <TableRow key={sale._id} sx={{ transition: 'background 0.2s', '&:hover': { background: 'rgba(25,118,210,0.07)' } }}>
+                    <TableCell>{sale._id}</TableCell>
+                    <TableCell>{sale.user.username}</TableCell>
+                    <TableCell>${sale.total}</TableCell>
+                    <TableCell>{sale.status}</TableCell>
+                    <TableCell>
+                      {new Date(sale.createdAt).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Paper>
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Editar Usuario</DialogTitle>
@@ -276,7 +287,7 @@ const SuperUserDashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

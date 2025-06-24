@@ -7,7 +7,11 @@ import {
   TextField,
   Button,
   Typography,
-  Box
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,6 +24,7 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [modalMsg, setModalMsg] = useState({ open: false, message: '', type: 'info' });
 
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 
@@ -44,10 +49,10 @@ const Register = () => {
 
     try {
       await register(formData.username, formData.email, formData.password);
-      toast.success('Registro exitoso');
+      setModalMsg({ open: true, message: 'Registro exitoso', type: 'success' });
       navigate('/');
     } catch (error) {
-      toast.error(error.message || 'Error al registrarse');
+      setModalMsg({ open: true, message: error.message || 'Error al registrarse', type: 'error' });
     }
   };
 
@@ -306,6 +311,15 @@ const Register = () => {
           </Button>
         </Box>
       </Paper>
+      <Dialog open={modalMsg.open} onClose={() => setModalMsg({ ...modalMsg, open: false })}>
+        <DialogTitle>{modalMsg.type === 'success' ? 'Éxito' : 'Error'}</DialogTitle>
+        <DialogContent>
+          <Typography>{modalMsg.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModalMsg({ ...modalMsg, open: false })}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

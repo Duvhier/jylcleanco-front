@@ -14,7 +14,11 @@ import {
   TextField,
   Divider,
   Avatar,
-  Paper
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -25,6 +29,8 @@ const Cart = () => {
   const navigate = useNavigate();
   const [cart, setCart] = useState({ products: [] });
   const [loading, setLoading] = useState(true);
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [modalMsg, setModalMsg] = useState({ open: false, message: '', type: 'info' });
 
   useEffect(() => {
     fetchCart();
@@ -67,9 +73,9 @@ const Cart = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchCart();
-      toast.success('Producto eliminado del carrito');
+      setModalMsg({ open: true, message: 'Producto eliminado del carrito', type: 'success' });
     } catch (error) {
-      toast.error('Error al eliminar el producto');
+      setModalMsg({ open: true, message: 'Error al eliminar el producto', type: 'error' });
     }
   };
 
@@ -80,9 +86,9 @@ const Cart = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchCart();
-      toast.success('Carrito vaciado');
+      setModalMsg({ open: true, message: 'Carrito vaciado', type: 'success' });
     } catch (error) {
-      toast.error('Error al vaciar el carrito');
+      setModalMsg({ open: true, message: 'Error al vaciar el carrito', type: 'error' });
     }
   };
 
@@ -101,10 +107,10 @@ const Cart = () => {
       );
 
       await handleClearCart();
-      toast.success('Compra realizada con éxito');
+      setModalMsg({ open: true, message: 'Compra realizada con éxito', type: 'success' });
       navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al realizar la compra');
+      setModalMsg({ open: true, message: error.response?.data?.message || 'Error al realizar la compra', type: 'error' });
     }
   };
 
@@ -199,7 +205,7 @@ const Cart = () => {
               <Button
                 variant="outlined"
                 color="error"
-                onClick={handleClearCart}
+                onClick={() => setOpenConfirm(true)}
               >
                 Vaciar Carrito
               </Button>
@@ -216,6 +222,27 @@ const Cart = () => {
           </>
         )}
       </Paper>
+
+      <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
+        <DialogTitle>¿Vaciar carrito?</DialogTitle>
+        <DialogContent>
+          <Typography>¿Estás seguro de que deseas vaciar el carrito?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirm(false)}>Cancelar</Button>
+          <Button onClick={() => { handleClearCart(); setOpenConfirm(false); }} color="error">Vaciar</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={modalMsg.open} onClose={() => setModalMsg({ ...modalMsg, open: false })}>
+        <DialogTitle>{modalMsg.type === 'success' ? 'Éxito' : 'Error'}</DialogTitle>
+        <DialogContent>
+          <Typography>{modalMsg.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModalMsg({ ...modalMsg, open: false })}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
