@@ -24,17 +24,24 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
+import './Cart.css';
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [cart, setCart] = useState({ products: [] });
   const [loading, setLoading] = useState(true);
   const [openConfirm, setOpenConfirm] = useState(false);
   const [modalMsg, setModalMsg] = useState({ open: false, message: '', type: 'info' });
 
   useEffect(() => {
-    fetchCart();
-  }, []);
+    if (isAuthenticated) {
+      fetchCart();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const fetchCart = async () => {
     try {
@@ -73,9 +80,9 @@ const Cart = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchCart();
-      setModalMsg({ open: true, message: 'Producto eliminado del carrito', type: 'success' });
+      toast.success('Producto eliminado del carrito');
     } catch (error) {
-      setModalMsg({ open: true, message: 'Error al eliminar el producto', type: 'error' });
+      toast.error('Error al eliminar el producto');
     }
   };
 
@@ -86,13 +93,19 @@ const Cart = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchCart();
-      setModalMsg({ open: true, message: 'Carrito vaciado', type: 'success' });
+      setOpenConfirm(false);
+      toast.success('Carrito vaciado');
     } catch (error) {
-      setModalMsg({ open: true, message: 'Error al vaciar el carrito', type: 'error' });
+      toast.error('Error al vaciar el carrito');
     }
   };
 
   const handleCheckout = async () => {
+    if (cart.products.length === 0) {
+      toast.error('El carrito está vacío');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const products = cart.products.map(item => ({
@@ -107,15 +120,37 @@ const Cart = () => {
       );
 
       await handleClearCart();
-      setModalMsg({ open: true, message: 'Compra realizada con éxito', type: 'success' });
+      toast.success('Compra realizada con éxito');
       navigate('/');
     } catch (error) {
-      setModalMsg({ open: true, message: error.response?.data?.message || 'Error al realizar la compra', type: 'error' });
+      toast.error(error.response?.data?.message || 'Error al realizar la compra');
     }
   };
 
   if (loading) {
-    return <Typography>Cargando...</Typography>;
+    return (
+      <Container maxWidth="md" className="cart-container">
+        <div className="cart-loading">
+          <span className="cart-loading-spinner"></span>
+          Cargando carrito...
+        </div>
+      </Container>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Container maxWidth="md" className="cart-container">
+        <Paper className="cart-paper" elevation={0}>
+          <Typography variant="h4" className="cart-title">
+            Carrito de Compras
+          </Typography>
+          <div className="cart-empty">
+            Debes iniciar sesión para ver tu carrito
+          </div>
+        </Paper>
+      </Container>
+    );
   }
 
   const total = cart.products.reduce(
@@ -124,69 +159,58 @@ const Cart = () => {
   );
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Paper
-        elevation={4}
-        sx={{
-          backdropFilter: 'blur(10px)',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '20px',
-          padding: '32px',
-          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-        }}
-      >
-        <Typography variant="h4" gutterBottom sx={{ color: '#fff', textShadow: '1px 1px 2px #000' }}>
+    <Container maxWidth="md" className="cart-container">
+      <Paper className="cart-paper" elevation={0}>
+        <Typography variant="h4" className="cart-title">
           Carrito de Compras
         </Typography>
 
         {cart.products.length === 0 ? (
-          <Typography sx={{ color: '#fff' }}>Tu carrito está vacío</Typography>
+          <div className="cart-empty">
+            Tu carrito está vacío. ¡Agrega algunos productos!
+          </div>
         ) : (
           <>
-            <List>
+            <List className="cart-list">
               {cart.products.map((item) => (
-                <ListItem key={item.product._id} sx={{ bgcolor: 'rgba(255,255,255,0.1)', mb: 1, borderRadius: 2 }}>
+                <ListItem key={item.product._id} className="cart-item">
                   <Avatar
                     src={item.product.image || item.product.imageUrl}
                     alt={item.product.name}
-                    sx={{ width: 56, height: 56, mr: 2 }}
+                    className="cart-avatar"
                   />
                   <ListItemText
                     primary={item.product.name}
-                    secondary={`$${item.product.price} x ${item.quantity}`}
-                    sx={{ color: '#fff' }}
+                    secondary={`$${item.product.price}`}
+                    className="cart-item-text"
                   />
                   <ListItemSecondaryAction>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <IconButton
-                        onClick={() => handleUpdateQuantity(item.product._id, item.quantity - 1)}
-                        sx={{ color: '#fff' }}
+                    <Box className="cart-quantity-box">
+                      <IconButton 
+                        onClick={() => handleUpdateQuantity(item.product._id, item.quantity - 1)} 
+                        className="icon-white"
+                        size="small"
                       >
                         <RemoveIcon />
                       </IconButton>
-                      <TextField
-                        value={item.quantity}
-                        onChange={(e) => handleUpdateQuantity(item.product._id, parseInt(e.target.value))}
+                      <input
                         type="number"
-                        size="small"
-                        sx={{
-                          width: '60px',
-                          mx: 1,
-                          input: { color: '#fff', textAlign: 'center' },
-                          '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' }
-                        }}
+                        value={item.quantity}
+                        onChange={(e) => handleUpdateQuantity(item.product._id, parseInt(e.target.value) || 1)}
+                        className="cart-quantity-input"
+                        min="1"
                       />
-                      <IconButton
-                        onClick={() => handleUpdateQuantity(item.product._id, item.quantity + 1)}
-                        sx={{ color: '#fff' }}
+                      <IconButton 
+                        onClick={() => handleUpdateQuantity(item.product._id, item.quantity + 1)} 
+                        className="icon-white"
+                        size="small"
                       >
                         <AddIcon />
                       </IconButton>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleRemoveItem(item.product._id)}
-                        sx={{ color: '#ff5555' }}
+                      <IconButton 
+                        onClick={() => handleRemoveItem(item.product._id)} 
+                        className="icon-delete"
+                        size="small"
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -196,51 +220,60 @@ const Cart = () => {
               ))}
             </List>
 
-            <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.3)' }} />
+            <Divider className="cart-divider" />
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ color: '#fff' }}>
+            <Box className="cart-summary">
+              <Typography variant="h5" className="cart-total">
                 Total: ${total.toFixed(2)}
               </Typography>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => setOpenConfirm(true)}
+              <Button 
+                onClick={() => setOpenConfirm(true)} 
+                className="cart-clear-button"
               >
                 Vaciar Carrito
               </Button>
             </Box>
 
             <Button
-              variant="contained"
-              color="primary"
-              fullWidth
               onClick={handleCheckout}
+              className="cart-checkout-button"
+              variant="contained"
+              size="large"
             >
-              Realizar Compra
+              Proceder al Pago
             </Button>
           </>
         )}
       </Paper>
 
-      <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
-        <DialogTitle>¿Vaciar carrito?</DialogTitle>
-        <DialogContent>
-          <Typography>¿Estás seguro de que deseas vaciar el carrito?</Typography>
+      <Dialog 
+        open={openConfirm} 
+        onClose={() => setOpenConfirm(false)}
+        PaperProps={{ className: 'cart-dialog' }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="dialog-title">
+          Vaciar Carrito
+        </DialogTitle>
+        <DialogContent className="dialog-content">
+          <Typography>
+            ¿Estás seguro de que quieres vaciar todo el carrito? Esta acción no se puede deshacer.
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenConfirm(false)}>Cancelar</Button>
-          <Button onClick={() => { handleClearCart(); setOpenConfirm(false); }} color="error">Vaciar</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={modalMsg.open} onClose={() => setModalMsg({ ...modalMsg, open: false })}>
-        <DialogTitle>{modalMsg.type === 'success' ? 'Éxito' : 'Error'}</DialogTitle>
-        <DialogContent>
-          <Typography>{modalMsg.message}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setModalMsg({ ...modalMsg, open: false })}>Cerrar</Button>
+          <Button 
+            onClick={() => setOpenConfirm(false)} 
+            className="dialog-button"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleClearCart} 
+            className="dialog-button error"
+          >
+            Vaciar
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

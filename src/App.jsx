@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Componentes
-import Navbar from './components/Navbar';
+import Navbar from './components/Navbar/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 
 // Páginas
@@ -13,9 +13,11 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Products from './pages/Products';
-import Cart from './pages/Cart';
-import AdminDashboard from './pages/AdminDashboard';
+import Cart from './pages/Cart/Cart';
+import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
 import SuperUserDashboard from './pages/SuperUserDashboard';
+import AddProduct from './pages/AddProduct/AddProduct';
+import ManageProducts from './pages/ManageProducts/ManageProducts';
 
 const theme = createTheme({
   palette: {
@@ -50,6 +52,18 @@ function App() {
           <Route path="/admin" element={
             <PrivateRoute roles={['Admin', 'SuperUser']}>
               <AdminDashboard />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/admin/add-product" element={
+            <PrivateRoute roles={['Admin', 'SuperUser']}>
+              <AddProduct />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/admin/manage-products" element={
+            <PrivateRoute roles={['Admin', 'SuperUser']}>
+              <ManageProducts />
             </PrivateRoute>
           } />
           
