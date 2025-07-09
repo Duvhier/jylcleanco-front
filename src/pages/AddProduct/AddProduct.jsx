@@ -19,7 +19,6 @@ const AddProduct = () => {
     price: '',
     stock: '',
     category: '',
-    image: '',
     imageUrl: ''
   });
 
@@ -40,22 +39,8 @@ const AddProduct = () => {
     }));
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Para simplicidad, usaremos una URL de imagen
-      // En producción, deberías subir la imagen a un servidor
-      const imageUrl = URL.createObjectURL(file);
-      setFormData(prev => ({
-        ...prev,
-        image: file.name,
-        imageUrl: imageUrl
-      }));
-    }
-  };
-
   const validateForm = () => {
-    const { name, description, price, stock, category } = formData;
+    const { name, description, price, stock, category, imageUrl } = formData;
     
     if (!name.trim()) {
       toast.error('El nombre del producto es requerido');
@@ -81,6 +66,11 @@ const AddProduct = () => {
       toast.error('Debes seleccionar una categoría');
       return false;
     }
+
+    if (!imageUrl.trim()) {
+      toast.error('La URL de la imagen es requerida');
+      return false;
+    }
     
     return true;
   };
@@ -98,7 +88,7 @@ const AddProduct = () => {
         ...formData,
         price: Number(formData.price),
         stock: Number(formData.stock),
-        image: formData.imageUrl || formData.image // Usar la URL de imagen si está disponible
+        image: formData.imageUrl // Solo la URL
       };
       
       await axios.post('http://localhost:5000/api/products', productData, {
@@ -123,7 +113,6 @@ const AddProduct = () => {
       price: '',
       stock: '',
       category: '',
-      image: '',
       imageUrl: ''
     });
     toast.info('Formulario limpiado');
@@ -238,7 +227,6 @@ const AddProduct = () => {
           {/* Imagen del Producto */}
           <div className="form-section">
             <h3 className="section-title">Imagen del Producto</h3>
-            
             <div className="image-upload-container">
               <div className="image-preview">
                 {formData.imageUrl ? (
@@ -254,25 +242,16 @@ const AddProduct = () => {
                   </div>
                 )}
               </div>
-              
               <div className="upload-controls">
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="file-input"
-                  id="image-upload"
+                  type="text"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  className="form-input"
+                  placeholder="Pega aquí la URL de la imagen"
+                  required
                 />
-                <label htmlFor="image-upload" className="upload-button">
-                  <CloudUpload />
-                  Seleccionar Imagen
-                </label>
-                
-                {formData.image && (
-                  <div className="image-info">
-                    <span>Archivo: {formData.image}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>

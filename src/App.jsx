@@ -18,6 +18,9 @@ import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
 import SuperUserDashboard from './pages/SuperUserDashboard';
 import AddProduct from './pages/AddProduct/AddProduct';
 import ManageProducts from './pages/ManageProducts/ManageProducts';
+import ManageUsers from './pages/ManageUsers';
+import Sales from './pages/Sales';
+import EditProduct from './pages/EditProduct/EditProduct';
 
 const theme = createTheme({
   palette: {
@@ -64,6 +67,24 @@ function App() {
           <Route path="/admin/manage-products" element={
             <PrivateRoute roles={['Admin', 'SuperUser']}>
               <ManageProducts />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/admin/manage-users" element={
+            <PrivateRoute roles={['Admin', 'SuperUser']}>
+              <ManageUsers />
+            </PrivateRoute>
+          } />
+
+          <Route path="/admin/sales" element={
+            <PrivateRoute roles={['Admin', 'SuperUser']}>
+              <Sales />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/admin/edit-product/:productId" element={
+            <PrivateRoute roles={['Admin', 'SuperUser']}>
+              <EditProduct />
             </PrivateRoute>
           } />
           

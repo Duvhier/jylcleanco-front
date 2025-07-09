@@ -33,7 +33,10 @@ const ManageProducts = () => {
   const handleDelete = async (productId) => {
     if (!window.confirm('¿Estás seguro de eliminar este producto?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/products/${productId}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Producto eliminado');
       setProducts(products.filter(p => p._id !== productId));
     } catch (error) {

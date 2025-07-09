@@ -16,6 +16,18 @@ import {
   Assessment
 } from '@mui/icons-material';
 import './AdminDashboard.css';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -27,6 +39,8 @@ const AdminDashboard = () => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [monthlyRevenue, setMonthlyRevenue] = useState([]);
+  const [showRevenueChart, setShowRevenueChart] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -72,6 +86,20 @@ const AdminDashboard = () => {
         totalSales,
         totalRevenue
       });
+
+      // Calcular ingresos mensuales
+      const now = new Date();
+      const year = now.getFullYear();
+      const monthly = Array(12).fill(0);
+      (salesResponse.data || []).forEach(sale => {
+        if (sale.date) {
+          const d = new Date(sale.date);
+          if (d.getFullYear() === year) {
+            monthly[d.getMonth()] += sale.total || 0;
+          }
+        }
+      });
+      setMonthlyRevenue(monthly);
 
       // Simular actividad reciente
       const mockActivity = [
@@ -125,13 +153,13 @@ const AdminDashboard = () => {
         navigate('/admin/manage-products');
         break;
       case 'manage-users':
-        toast.info('Gestión de usuarios - Funcionalidad en desarrollo');
+        navigate('/admin/manage-users');
         break;
       case 'view-sales':
-        toast.info('Ver ventas - Funcionalidad en desarrollo');
+        navigate('/admin/sales');
         break;
       case 'reports':
-        toast.info('Generación de reportes - Funcionalidad en desarrollo');
+        setShowRevenueChart(true);
         break;
       case 'inventory':
         toast.info('Control de inventario - Funcionalidad en desarrollo');
@@ -181,6 +209,46 @@ const AdminDashboard = () => {
           <div className="quick-stat-label">Ingresos</div>
         </div>
       </div>
+
+      {/* Gráfico de ingresos mensuales (solo si showRevenueChart) */}
+      {showRevenueChart && (
+        <div className="revenue-chart-modal-overlay" onClick={() => setShowRevenueChart(false)}>
+          <div className="revenue-chart-modal" onClick={e => e.stopPropagation()}>
+            <button className="close-modal-btn" onClick={() => setShowRevenueChart(false)}>×</button>
+            <h2 className="revenue-chart-title">Ingresos Mensuales ({new Date().getFullYear()})</h2>
+            <Bar
+              data={{
+                labels: [
+                  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                ],
+                datasets: [
+                  {
+                    label: 'Ingresos ($)',
+                    data: monthlyRevenue,
+                    backgroundColor: '#1976d2',
+                    borderRadius: 6
+                  }
+                ]
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { display: false },
+                  title: { display: false }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: { callback: value => `$${value}` }
+                  }
+                }
+              }}
+              height={320}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="stats-grid">
