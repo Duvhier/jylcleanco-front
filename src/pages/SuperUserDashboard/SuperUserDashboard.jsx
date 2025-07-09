@@ -232,7 +232,7 @@ const SuperUserDashboard = () => {
 
       {/* Stats Overview */}
       <div className="stats-overview">
-        <div className="stat-overview-card" onClick={() => handleAction('manage-users')}>
+        <div className="stat-overview-card" onClick={() => navigate('/admin/manage-users')}>
           <div className="stat-overview-icon">👥</div>
           <div className="stat-overview-number">{stats.totalUsers}</div>
           <div className="stat-overview-label">Usuarios Totales</div>
