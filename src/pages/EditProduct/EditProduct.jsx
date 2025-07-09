@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { ArrowBack, CloudUpload, Save, Clear } from '@mui/icons-material';
 import './EditProduct.css';
+import api from '../../api';
 
 const EditProduct = () => {
   const { productId } = useParams();
@@ -37,7 +38,7 @@ const EditProduct = () => {
   const fetchProduct = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/products/${productId}`);
+      const res = await api.get(`/products/${productId}`);
       const prod = res.data;
       setFormData({
         name: prod.name || '',
@@ -114,7 +115,7 @@ const EditProduct = () => {
         stock: Number(formData.stock),
         image: formData.imageUrl || initialImage
       };
-      await axios.put(`http://localhost:5000/api/products/${productId}`, productData, {
+      await api.put(`/products/${productId}`, productData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Producto actualizado exitosamente');

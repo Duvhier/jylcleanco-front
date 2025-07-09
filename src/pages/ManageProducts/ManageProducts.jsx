@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { Edit, Delete, Add } from '@mui/icons-material';
 import './ManageProducts.css';
+import api from '../../api';
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
@@ -17,7 +18,7 @@ const ManageProducts = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/products');
+      const res = await api.get('/products');
       setProducts(res.data);
     } catch (error) {
       toast.error('Error al cargar productos');
@@ -34,7 +35,7 @@ const ManageProducts = () => {
     if (!window.confirm('¿Estás seguro de eliminar este producto?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+      await api.delete(`/products/${productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Producto eliminado');

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import './ManageUsers.css';
+import api from '../../api';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -17,7 +18,7 @@ const ManageUsers = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/users', {
+      const response = await api.get('/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(response.data);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import api from '../../api';
 import {
   ArrowBack,
   CloudUpload,
@@ -91,7 +92,7 @@ const AddProduct = () => {
         image: formData.imageUrl // Solo la URL
       };
       
-      await axios.post('http://localhost:5000/api/products', productData, {
+      await api.post('/products', productData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import './Sales.css';
+import api from '../../api';
 
 const Sales = () => {
   const [sales, setSales] = useState([]);
@@ -28,7 +29,7 @@ const Sales = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/sales', {
+      const response = await api.get('/sales', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSales(response.data);
@@ -42,7 +43,7 @@ const Sales = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/users', {
+      const response = await api.get('/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(response.data);

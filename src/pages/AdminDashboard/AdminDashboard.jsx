@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import api from '../../api';
 import {
   ShoppingCart,
   People,
@@ -53,19 +54,13 @@ const AdminDashboard = () => {
       // Intentar obtener datos de diferentes endpoints disponibles
       const requests = [
         // Obtener productos
-        axios.get('http://localhost:5000/api/products', {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] })),
+        api.get('/products', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
         
         // Obtener usuarios (si existe el endpoint)
-        axios.get('http://localhost:5000/api/users', {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] })),
+        api.get('/users', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
         
         // Obtener ventas (si existe el endpoint)
-        axios.get('http://localhost:5000/api/sales', {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] }))
+        api.get('/sales', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
       ];
 
       const [productsResponse, usersResponse, salesResponse] = await Promise.all(requests);
