@@ -45,7 +45,7 @@ const Home = () => {
           </p>
         </div>
         <div className="content-image">
-          <img src="/images/online.jpg" alt="Tienda Online" />
+          <img src="/images/online.png" alt="Tienda Online" />
         </div>
       </section>
 
