@@ -1,11 +1,12 @@
 import axios from 'axios';
 
+// Configuración única para axios
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://jylclean-back.vercel.app';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  withCredentials: true,
+  withCredentials: true, // Importante para CORS con credenciales
 });
 
 // Interceptor para requests
