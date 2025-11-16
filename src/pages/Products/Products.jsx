@@ -1,22 +1,12 @@
 // src/pages/Products/Products.js
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import './Products.css';
 import { FiGrid } from 'react-icons/fi';
 import { GiSoap, GiCandleFlame, GiDrop } from 'react-icons/gi';
 import { MdAir, MdFace } from 'react-icons/md';
-
-// Configuración simple de axios
-const isProduction = process.env.NODE_ENV === 'production';
-const API_BASE_URL = isProduction 
-  ? 'https://jylclean-back.vercel.app' 
-  : 'http://localhost:5000';
-
-// Configurar axios
-axios.defaults.baseURL = API_BASE_URL;
-axios.defaults.timeout = 15000;
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -30,44 +20,10 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
 
-  // Configurar interceptores una vez
-  useEffect(() => {
-    // Interceptor para requests
-    const requestInterceptor = axios.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-
-    // Interceptor para responses
-    const responseInterceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('token');
-          window.dispatchEvent(new Event('storage'));
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      axios.interceptors.request.eject(requestInterceptor);
-      axios.interceptors.response.eject(responseInterceptor);
-    };
-  }, []);
-
   // Verificar conexión al backend
   const checkConnection = async () => {
     try {
-      await axios.get('/api/health');
+      await api.get('/api/health');
       setConnectionStatus('connected');
     } catch (error) {
       setConnectionStatus('error');
@@ -83,7 +39,7 @@ const Products = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/products');
+      const response = await api.get('/api/products');
       setProducts(response.data);
       setConnectionStatus('connected');
     } catch (error) {
@@ -111,7 +67,7 @@ const Products = () => {
     }
 
     try {
-      await axios.post('/api/cart/add', {
+      await api.post('/api/cart/add', {
         productId,
         quantity: 1,
       });
@@ -143,7 +99,7 @@ const Products = () => {
     return true;
   });
 
-  const categories = ['Todas', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+  const categories = ['Todas', ...Array.from(new Set(products.map(p => p.category).filter(Boolean))];
 
   const getCategoryIcon = (category) => {
     const normalized = (category || '').toLowerCase();
