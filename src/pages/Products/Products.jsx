@@ -3,6 +3,9 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import './Products.css';
+import { FiGrid } from 'react-icons/fi';
+import { GiSoap, GiCandleFlame, GiDrop } from 'react-icons/gi';
+import { MdAir, MdFace } from 'react-icons/md';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -63,6 +66,17 @@ const Products = () => {
   });
 
   const categories = ['Todas', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+
+  const getCategoryIcon = (category) => {
+    const normalized = (category || '').toLowerCase();
+    if (normalized === 'todas') return <FiGrid />;
+    if (normalized === 'cremas') return <MdFace />;
+    if (normalized === 'aceites') return <GiDrop />;
+    if (normalized === 'ambientadores') return <MdAir />;
+    if (normalized === 'jabones') return <GiSoap />;
+    if (normalized === 'velas') return <GiCandleFlame />;
+    return <FiGrid />;
+  };
 
   if (loading) {
     return (
@@ -146,7 +160,8 @@ const Products = () => {
               onClick={() => setSelectedCategory(cat)} 
               className={`category-button ${selectedCategory === cat ? 'active' : ''}`}
             >
-              {cat}
+              <span className="category-icon">{getCategoryIcon(cat)}</span>
+              <span className="category-text">{cat}</span>
             </button>
           ))}
         </div>

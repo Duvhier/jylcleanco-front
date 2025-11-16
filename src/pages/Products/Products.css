@@ -152,6 +152,9 @@
   cursor: pointer;
   transition: all var(--transition-normal);
   text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .category-button:hover {
@@ -164,6 +167,15 @@
   background: var(--primary-color);
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.category-icon {
+  display: inline-flex;
+  font-size: 1rem;
+}
+
+.category-text {
+  line-height: 1;
 }
 
 /* Search Section */

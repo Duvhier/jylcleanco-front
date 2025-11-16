@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import WelcomeMessage from '../../components/WelcomeMessage';
 import './Home.css';
 
 const Home = () => {
@@ -7,6 +8,9 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      {/* Welcome Message */}
+      <WelcomeMessage />
+      
       {/* Hero Section */}
       <section className="hero-section glass-card">
         <div className="hero-content">
