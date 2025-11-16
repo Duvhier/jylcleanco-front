@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import './ManageUsers.css';
-import api from '../../api';
+import api from "../../services/api";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);

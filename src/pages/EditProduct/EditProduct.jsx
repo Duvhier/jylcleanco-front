@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { ArrowBack, CloudUpload, Save, Clear } from '@mui/icons-material';
 import './EditProduct.css';
-import api from '../../api';
+import api from "../../services/api";
 
 const EditProduct = () => {
   const { productId } = useParams();

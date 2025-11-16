@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { Edit, Delete, Add } from '@mui/icons-material';
 import './ManageProducts.css';
-import api from '../../api';
+import api from "../../services/api";
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
