@@ -6,6 +6,10 @@ import './Products.css';
 import { FiGrid } from 'react-icons/fi';
 import { GiSoap, GiCandleFlame, GiDrop } from 'react-icons/gi';
 import { MdAir, MdFace } from 'react-icons/md';
+import { API_BASE_URL, API_ENDPOINTS, setupAxios } from '../../config/api';
+
+// Configurar axios globalmente
+setupAxios();
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -17,18 +21,57 @@ const Products = () => {
   const [maxPrice, setMaxPrice] = useState('');
   const [bestSellers, setBestSellers] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState('checking');
+
+  // Verificar conexión al backend
+  const checkConnection = async () => {
+    try {
+      const response = await axios.get('/api/health');
+      setConnectionStatus('connected');
+      console.log('✅ Conectado al backend:', response.data);
+    } catch (error) {
+      setConnectionStatus('error');
+      console.error('❌ Error de conexión:', error.message);
+    }
+  };
 
   useEffect(() => {
+    checkConnection();
     fetchProducts();
   }, []);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/products');
+      console.log('🔍 Solicitando productos desde:', `${API_BASE_URL}/api/products`);
+      
+      const response = await axios.get('/api/products', {
+        timeout: 10000,
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      console.log('✅ Productos cargados exitosamente:', response.data.length);
       setProducts(response.data);
+      setConnectionStatus('connected');
+      
     } catch (error) {
-      toast.error('Error al cargar los productos');
+      console.error('❌ Error cargando productos:', error);
+      
+      if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+        toast.error('Error de conexión. Verifica tu internet e intenta nuevamente.');
+        setConnectionStatus('network_error');
+      } else if (error.response?.status === 404) {
+        toast.error('Endpoint no encontrado. Verifica la configuración del servidor.');
+        setConnectionStatus('endpoint_error');
+      } else if (error.response?.status >= 500) {
+        toast.error('Error del servidor. Intenta nuevamente más tarde.');
+        setConnectionStatus('server_error');
+      } else {
+        toast.error('Error al cargar los productos');
+        setConnectionStatus('error');
+      }
     } finally {
       setLoading(false);
     }
@@ -39,17 +82,34 @@ const Products = () => {
       toast.error('Debes iniciar sesión para agregar productos al carrito');
       return;
     }
+
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/cart/add', {
+      const response = await axios.post('/api/cart/add', {
         productId,
         quantity: 1,
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+        timeout: 8000,
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
-      toast.success('Producto agregado al carrito');
+
+      toast.success('✅ Producto agregado al carrito');
+      
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al agregar al carrito');
+      console.error('❌ Error agregando al carrito:', error);
+      
+      if (error.response?.status === 401) {
+        toast.error('🔐 Sesión expirada. Por favor inicia sesión nuevamente.');
+        localStorage.removeItem('token');
+        window.dispatchEvent(new Event('storage'));
+      } else if (error.response?.status === 404) {
+        toast.error('❌ Producto no encontrado');
+      } else if (error.response?.data?.message) {
+        toast.error(`❌ ${error.response.data.message}`);
+      } else {
+        toast.error('❌ Error al agregar al carrito');
+      }
     }
   };
 
@@ -78,6 +138,19 @@ const Products = () => {
     return <FiGrid />;
   };
 
+  const getConnectionStatusMessage = () => {
+    const statusMessages = {
+      checking: { text: '🔄 Verificando conexión...', className: 'status-checking' },
+      connected: { text: '✅ Conectado al servidor', className: 'status-connected' },
+      error: { text: '❌ Error de conexión', className: 'status-error' },
+      network_error: { text: '🌐 Error de red', className: 'status-error' },
+      endpoint_error: { text: '🔌 Endpoint no encontrado', className: 'status-error' },
+      server_error: { text: '🚨 Error del servidor', className: 'status-error' }
+    };
+    
+    return statusMessages[connectionStatus] || statusMessages.error;
+  };
+
   if (loading) {
     return (
       <div className="products-container">
@@ -89,14 +162,38 @@ const Products = () => {
     );
   }
 
+  const statusInfo = getConnectionStatusMessage();
+
   return (
     <div className="products-container">
-      {/* Header */}
+      {/* Header con estado de conexión */}
       <div className="products-header">
         <h1 className="products-title">Productos Recientes</h1>
         <p className="products-subtitle">
           Descubre nuestra variedad de productos y filtra por categoría para encontrar exactamente lo que necesitas.
         </p>
+        
+        {/* Indicador de estado de conexión */}
+        <div className={`connection-status ${statusInfo.className}`}>
+          <span className="status-indicator"></span>
+          {statusInfo.text}
+          {connectionStatus === 'connected' && (
+            <span className="server-url">({API_BASE_URL})</span>
+          )}
+        </div>
+
+        {/* Botón de reconexión si hay error */}
+        {(connectionStatus === 'error' || connectionStatus === 'network_error') && (
+          <button 
+            onClick={() => {
+              setConnectionStatus('checking');
+              fetchProducts();
+            }}
+            className="reconnect-button"
+          >
+            🔄 Reintentar conexión
+          </button>
+        )}
       </div>
 
       {/* Filters Section */}
@@ -109,6 +206,7 @@ const Products = () => {
               value={availability} 
               onChange={(e) => setAvailability(e.target.value)}
               className="filter-select"
+              disabled={connectionStatus !== 'connected'}
             >
               <option value="all">Todos</option>
               <option value="available">Disponibles</option>
@@ -124,6 +222,7 @@ const Products = () => {
               value={minPrice} 
               onChange={e => setMinPrice(e.target.value)}
               className="filter-input"
+              disabled={connectionStatus !== 'connected'}
             />
           </div>
 
@@ -135,6 +234,7 @@ const Products = () => {
               value={maxPrice} 
               onChange={e => setMaxPrice(e.target.value)}
               className="filter-input"
+              disabled={connectionStatus !== 'connected'}
             />
           </div>
 
@@ -144,6 +244,7 @@ const Products = () => {
                 type="checkbox" 
                 checked={bestSellers} 
                 onChange={e => setBestSellers(e.target.checked)}
+                disabled={connectionStatus !== 'connected'}
               />
               Más vendidos
             </label>
@@ -159,6 +260,7 @@ const Products = () => {
               key={cat} 
               onClick={() => setSelectedCategory(cat)} 
               className={`category-button ${selectedCategory === cat ? 'active' : ''}`}
+              disabled={connectionStatus !== 'connected'}
             >
               <span className="category-icon">{getCategoryIcon(cat)}</span>
               <span className="category-text">{cat}</span>
@@ -175,12 +277,30 @@ const Products = () => {
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
           className="search-input"
+          disabled={connectionStatus !== 'connected'}
         />
       </div>
 
       {/* Products Grid */}
       <div className="products-grid">
-        {filteredProducts.length === 0 ? (
+        {connectionStatus !== 'connected' ? (
+          <div className="connection-error-state">
+            <div className="error-icon">🔌</div>
+            <h3 className="error-title">Problema de conexión</h3>
+            <p className="error-message">
+              No podemos cargar los productos en este momento. 
+              {connectionStatus === 'network_error' && ' Verifica tu conexión a internet.'}
+              {connectionStatus === 'server_error' && ' El servidor no está disponible.'}
+              {connectionStatus === 'error' && ' Error de conexión con el servidor.'}
+            </p>
+            <button 
+              onClick={fetchProducts}
+              className="retry-button"
+            >
+              🔄 Reintentar
+            </button>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">🔍</div>
             <h3 className="empty-state-title">No se encontraron productos</h3>
@@ -195,6 +315,9 @@ const Products = () => {
                 src={product.image || product.imageUrl} 
                 alt={product.name} 
                 className="product-image" 
+                onError={(e) => {
+                  e.target.src = '/images/placeholder-product.jpg';
+                }}
               />
               <div className="product-info">
                 <h3 className="product-name">{product.name}</h3>
@@ -206,7 +329,7 @@ const Products = () => {
                 <button 
                   onClick={() => handleAddToCart(product._id)}
                   className="add-to-cart-button"
-                  disabled={product.stock <= 0}
+                  disabled={product.stock <= 0 || connectionStatus !== 'connected'}
                 >
                   {product.stock > 0 ? 'Agregar al carrito' : 'Agotado'}
                 </button>
