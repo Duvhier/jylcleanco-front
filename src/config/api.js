@@ -1,4 +1,6 @@
 // src/config/api.js
+import axios from 'axios';
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Configuración para diferentes entornos

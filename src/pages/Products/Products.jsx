@@ -1,3 +1,4 @@
+// src/pages/Products/Products.js
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
@@ -6,10 +7,16 @@ import './Products.css';
 import { FiGrid } from 'react-icons/fi';
 import { GiSoap, GiCandleFlame, GiDrop } from 'react-icons/gi';
 import { MdAir, MdFace } from 'react-icons/md';
-import { API_BASE_URL, API_ENDPOINTS, setupAxios } from '../../config/api';
 
-// Configurar axios globalmente
-setupAxios();
+// Configuración simple de axios
+const isProduction = process.env.NODE_ENV === 'production';
+const API_BASE_URL = isProduction 
+  ? 'https://jylclean-back.vercel.app' 
+  : 'http://localhost:5000';
+
+// Configurar axios
+axios.defaults.baseURL = API_BASE_URL;
+axios.defaults.timeout = 15000;
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -23,15 +30,48 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
 
+  // Configurar interceptores una vez
+  useEffect(() => {
+    // Interceptor para requests
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Interceptor para responses
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          window.dispatchEvent(new Event('storage'));
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
+
   // Verificar conexión al backend
   const checkConnection = async () => {
     try {
-      const response = await axios.get('/api/health');
+      await axios.get('/api/health');
       setConnectionStatus('connected');
-      console.log('✅ Conectado al backend:', response.data);
     } catch (error) {
       setConnectionStatus('error');
-      console.error('❌ Error de conexión:', error.message);
+      console.error('Error de conexión:', error.message);
     }
   };
 
@@ -43,31 +83,18 @@ const Products = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Solicitando productos desde:', `${API_BASE_URL}/api/products`);
-      
-      const response = await axios.get('/api/products', {
-        timeout: 10000,
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      console.log('✅ Productos cargados exitosamente:', response.data.length);
+      const response = await axios.get('/api/products');
       setProducts(response.data);
       setConnectionStatus('connected');
-      
     } catch (error) {
-      console.error('❌ Error cargando productos:', error);
+      console.error('Error cargando productos:', error);
       
       if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
-        toast.error('Error de conexión. Verifica tu internet e intenta nuevamente.');
+        toast.error('Error de conexión. Verifica tu internet.');
         setConnectionStatus('network_error');
       } else if (error.response?.status === 404) {
-        toast.error('Endpoint no encontrado. Verifica la configuración del servidor.');
+        toast.error('Endpoint no encontrado.');
         setConnectionStatus('endpoint_error');
-      } else if (error.response?.status >= 500) {
-        toast.error('Error del servidor. Intenta nuevamente más tarde.');
-        setConnectionStatus('server_error');
       } else {
         toast.error('Error al cargar los productos');
         setConnectionStatus('error');
@@ -84,27 +111,18 @@ const Products = () => {
     }
 
     try {
-      const response = await axios.post('/api/cart/add', {
+      await axios.post('/api/cart/add', {
         productId,
         quantity: 1,
-      }, {
-        timeout: 8000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
       });
-
       toast.success('✅ Producto agregado al carrito');
-      
     } catch (error) {
-      console.error('❌ Error agregando al carrito:', error);
+      console.error('Error agregando al carrito:', error);
       
       if (error.response?.status === 401) {
-        toast.error('🔐 Sesión expirada. Por favor inicia sesión nuevamente.');
+        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
         localStorage.removeItem('token');
         window.dispatchEvent(new Event('storage'));
-      } else if (error.response?.status === 404) {
-        toast.error('❌ Producto no encontrado');
       } else if (error.response?.data?.message) {
         toast.error(`❌ ${error.response.data.message}`);
       } else {
@@ -145,7 +163,6 @@ const Products = () => {
       error: { text: '❌ Error de conexión', className: 'status-error' },
       network_error: { text: '🌐 Error de red', className: 'status-error' },
       endpoint_error: { text: '🔌 Endpoint no encontrado', className: 'status-error' },
-      server_error: { text: '🚨 Error del servidor', className: 'status-error' }
     };
     
     return statusMessages[connectionStatus] || statusMessages.error;
@@ -173,22 +190,14 @@ const Products = () => {
           Descubre nuestra variedad de productos y filtra por categoría para encontrar exactamente lo que necesitas.
         </p>
         
-        {/* Indicador de estado de conexión */}
         <div className={`connection-status ${statusInfo.className}`}>
           <span className="status-indicator"></span>
           {statusInfo.text}
-          {connectionStatus === 'connected' && (
-            <span className="server-url">({API_BASE_URL})</span>
-          )}
         </div>
 
-        {/* Botón de reconexión si hay error */}
         {(connectionStatus === 'error' || connectionStatus === 'network_error') && (
           <button 
-            onClick={() => {
-              setConnectionStatus('checking');
-              fetchProducts();
-            }}
+            onClick={fetchProducts}
             className="reconnect-button"
           >
             🔄 Reintentar conexión
@@ -206,7 +215,6 @@ const Products = () => {
               value={availability} 
               onChange={(e) => setAvailability(e.target.value)}
               className="filter-select"
-              disabled={connectionStatus !== 'connected'}
             >
               <option value="all">Todos</option>
               <option value="available">Disponibles</option>
@@ -222,7 +230,6 @@ const Products = () => {
               value={minPrice} 
               onChange={e => setMinPrice(e.target.value)}
               className="filter-input"
-              disabled={connectionStatus !== 'connected'}
             />
           </div>
 
@@ -234,7 +241,6 @@ const Products = () => {
               value={maxPrice} 
               onChange={e => setMaxPrice(e.target.value)}
               className="filter-input"
-              disabled={connectionStatus !== 'connected'}
             />
           </div>
 
@@ -244,7 +250,6 @@ const Products = () => {
                 type="checkbox" 
                 checked={bestSellers} 
                 onChange={e => setBestSellers(e.target.checked)}
-                disabled={connectionStatus !== 'connected'}
               />
               Más vendidos
             </label>
@@ -260,7 +265,6 @@ const Products = () => {
               key={cat} 
               onClick={() => setSelectedCategory(cat)} 
               className={`category-button ${selectedCategory === cat ? 'active' : ''}`}
-              disabled={connectionStatus !== 'connected'}
             >
               <span className="category-icon">{getCategoryIcon(cat)}</span>
               <span className="category-text">{cat}</span>
@@ -277,7 +281,6 @@ const Products = () => {
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
           className="search-input"
-          disabled={connectionStatus !== 'connected'}
         />
       </div>
 
@@ -288,10 +291,7 @@ const Products = () => {
             <div className="error-icon">🔌</div>
             <h3 className="error-title">Problema de conexión</h3>
             <p className="error-message">
-              No podemos cargar los productos en este momento. 
-              {connectionStatus === 'network_error' && ' Verifica tu conexión a internet.'}
-              {connectionStatus === 'server_error' && ' El servidor no está disponible.'}
-              {connectionStatus === 'error' && ' Error de conexión con el servidor.'}
+              No podemos cargar los productos en este momento.
             </p>
             <button 
               onClick={fetchProducts}
@@ -305,7 +305,7 @@ const Products = () => {
             <div className="empty-state-icon">🔍</div>
             <h3 className="empty-state-title">No se encontraron productos</h3>
             <p className="empty-state-message">
-              Intenta ajustar los filtros o términos de búsqueda para encontrar lo que buscas.
+              Intenta ajustar los filtros o términos de búsqueda.
             </p>
           </div>
         ) : (
@@ -329,7 +329,7 @@ const Products = () => {
                 <button 
                   onClick={() => handleAddToCart(product._id)}
                   className="add-to-cart-button"
-                  disabled={product.stock <= 0 || connectionStatus !== 'connected'}
+                  disabled={product.stock <= 0}
                 >
                   {product.stock > 0 ? 'Agregar al carrito' : 'Agotado'}
                 </button>
