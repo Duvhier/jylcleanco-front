@@ -23,7 +23,7 @@ const Products = () => {
   // Verificar conexión al backend
   const checkConnection = async () => {
     try {
-      await api.get('/api/health');
+      await api.get('/api/health'); // ← Ruta correcta con /api
       setConnectionStatus('connected');
     } catch (error) {
       setConnectionStatus('error');
@@ -39,7 +39,7 @@ const Products = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/products');
+      const response = await api.get('/api/products'); // ← Ruta correcta con /api
       setProducts(response.data);
       setConnectionStatus('connected');
     } catch (error) {
@@ -67,7 +67,7 @@ const Products = () => {
     }
 
     try {
-      await api.post('/api/cart/add', {
+      await api.post('/api/cart/add', { // ← Ruta correcta con /api
         productId,
         quantity: 1,
       });
@@ -99,7 +99,10 @@ const Products = () => {
     return true;
   });
 
-  const categories = ['Todas', ...Array.from(new Set(products.map(p => p.category).filter(Boolean))];
+  const categories = ['Todas', ...new Set(products
+    .map(p => p?.category) // Usar optional chaining
+    .filter(category => category != null && category !== '') // Filtrar null, undefined y strings vacíos
+  )];
 
   const getCategoryIcon = (category) => {
     const normalized = (category || '').toLowerCase();
