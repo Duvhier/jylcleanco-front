@@ -29,6 +29,11 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
+    // ✅ AGREGAR /api si no está presente
+    if (config.url && !config.url.startsWith('/api/') && !config.url.startsWith('/health')) {
+      config.url = `/api${config.url}`;
+    }
+    
     const fullUrl = `${config.baseURL}${config.url}`;
     console.log(`📤 ${config.method?.toUpperCase()} ${fullUrl}`);
     
