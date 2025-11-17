@@ -20,7 +20,10 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
 
+  
+
 // CORREGIR ESTAS RUTAS:
+// En tu Products.js - CORREGIR LAS LLAMADAS API
 const checkConnection = async () => {
   try {
     await api.get('/health');
@@ -33,36 +36,37 @@ const checkConnection = async () => {
 
 const fetchProducts = async () => {
   try {
+    // ✅ AHORA USA /api/products
     const response = await api.get('/products'); 
     setProducts(response.data);
     setConnectionStatus('connected');
   } catch (error) {
-    // manejo de error...
+    console.error('Error fetching products:', error);
+    if (error.code === 'NETWORK_ERROR' || !error.response) {
+      setConnectionStatus('network_error');
+    } else if (error.response.status === 404) {
+      setConnectionStatus('endpoint_error');
+    } else {
+      setConnectionStatus('error');
+    }
+  } finally {
+    setLoading(false);
   }
 };
 
 const handleAddToCart = async (productId) => {
   try {
+    // ✅ AHORA USA /api/cart/add
     await api.post('/cart/add', { 
       productId,
       quantity: 1,
     });
     toast.success('✅ Producto agregado al carrito');
   } catch (error) {
-      console.error('Error agregando al carrito:', error);
-      
-      if (error.response?.status === 401) {
-        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
-        localStorage.removeItem('token');
-        window.dispatchEvent(new Event('storage'));
-      } else if (error.response?.data?.message) {
-        toast.error(`❌ ${error.response.data.message}`);
-      } else {
-        toast.error('❌ Error al agregar al carrito');
-      }
-    }
-  };
-
+    console.error('Error agregando al carrito:', error);
+    // ... manejo de errores
+  }
+};
   const filteredProducts = products.filter(product => {
     if (selectedCategory !== 'Todas' && product.category !== selectedCategory) return false;
     if (!product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
