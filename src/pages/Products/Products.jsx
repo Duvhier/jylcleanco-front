@@ -23,7 +23,7 @@ const Products = () => {
   // Verificar conexión al backend
   const checkConnection = async () => {
     try {
-      await api.get('/api/health'); // ← Ruta correcta con /api
+      await api.get('/health'); // ← Ruta correcta con /api
       setConnectionStatus('connected');
     } catch (error) {
       setConnectionStatus('error');
@@ -39,7 +39,7 @@ const Products = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/products'); // ← Ruta correcta con /api
+      const response = await api.get('/products'); // ← Ruta correcta con /api
       setProducts(response.data);
       setConnectionStatus('connected');
     } catch (error) {
@@ -67,7 +67,7 @@ const Products = () => {
     }
 
     try {
-      await api.post('/api/cart/add', { // ← Ruta correcta con /api
+      await api.post('/cart/add', { // ← Ruta correcta con /api
         productId,
         quantity: 1,
       });
