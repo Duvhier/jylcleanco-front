@@ -11,7 +11,6 @@ import {
   IconButton,
   Button,
   Box,
-  TextField,
   Divider,
   Avatar,
   Paper,
@@ -23,7 +22,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import axios from 'axios';
+import api from '../../services/api'; // ← USAR TU API CONFIGURADA
 import { useAuth } from '../../contexts/AuthContext';
 import './Cart.css';
 
@@ -33,7 +32,6 @@ const Cart = () => {
   const [cart, setCart] = useState({ products: [] });
   const [loading, setLoading] = useState(true);
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [modalMsg, setModalMsg] = useState({ open: false, message: '', type: 'info' });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -45,13 +43,21 @@ const Cart = () => {
 
   const fetchCart = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/cart', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/cart'); // ← USAR API CONFIGURADA
       setCart(response.data);
     } catch (error) {
-      toast.error('Error al cargar el carrito');
+      console.error('Error cargando carrito:', error);
+      
+      if (error.response?.status === 401) {
+        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
+        localStorage.removeItem('token');
+        window.dispatchEvent(new Event('storage'));
+      } else if (error.response?.status === 404) {
+        // Carrito no encontrado, crear uno vacío
+        setCart({ products: [] });
+      } else {
+        toast.error('Error al cargar el carrito');
+      }
     } finally {
       setLoading(false);
     }
@@ -61,41 +67,42 @@ const Cart = () => {
     if (newQuantity < 1) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `http://localhost:5000/api/cart/update/${productId}`,
-        { quantity: newQuantity },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await api.put(
+        `/cart/update/${productId}`, // ← USAR API CONFIGURADA
+        { quantity: newQuantity }
       );
       fetchCart();
+      toast.success('Cantidad actualizada');
     } catch (error) {
-      toast.error('Error al actualizar la cantidad');
+      console.error('Error actualizando cantidad:', error);
+      
+      if (error.response?.data?.message) {
+        toast.error(`❌ ${error.response.data.message}`);
+      } else {
+        toast.error('Error al actualizar la cantidad');
+      }
     }
   };
 
   const handleRemoveItem = async (productId) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/cart/remove/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/cart/remove/${productId}`); // ← USAR API CONFIGURADA
       fetchCart();
       toast.success('Producto eliminado del carrito');
     } catch (error) {
+      console.error('Error eliminando producto:', error);
       toast.error('Error al eliminar el producto');
     }
   };
 
   const handleClearCart = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete('http://localhost:5000/api/cart/clear', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete('/cart/clear'); // ← USAR API CONFIGURADA
       fetchCart();
       setOpenConfirm(false);
       toast.success('Carrito vaciado');
     } catch (error) {
+      console.error('Error vaciando carrito:', error);
       toast.error('Error al vaciar el carrito');
     }
   };
@@ -107,23 +114,26 @@ const Cart = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
       const products = cart.products.map(item => ({
         product: item.product._id,
         quantity: item.quantity
       }));
 
-      await axios.post(
-        'http://localhost:5000/api/sales',
-        { products },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post('/sales', { products }); // ← USAR API CONFIGURADA
 
       await handleClearCart();
-      toast.success('Compra realizada con éxito');
+      toast.success('✅ Compra realizada con éxito');
       navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error al realizar la compra');
+      console.error('Error en checkout:', error);
+      
+      if (error.response?.data?.message) {
+        toast.error(`❌ ${error.response.data.message}`);
+      } else if (error.response?.status === 400) {
+        toast.error('Stock insuficiente para algunos productos');
+      } else {
+        toast.error('Error al realizar la compra');
+      }
     }
   };
 
@@ -178,10 +188,20 @@ const Cart = () => {
                     src={item.product.image || item.product.imageUrl}
                     alt={item.product.name}
                     className="cart-avatar"
+                    onError={(e) => {
+                      e.target.src = '/images/placeholder-product.jpg';
+                    }}
                   />
                   <ListItemText
                     primary={item.product.name}
-                    secondary={`$${item.product.price}`}
+                    secondary={
+                      <>
+                        <div>${item.product.price}</div>
+                        <div className="cart-item-subtotal">
+                          Subtotal: ${(item.product.price * item.quantity).toFixed(2)}
+                        </div>
+                      </>
+                    }
                     className="cart-item-text"
                   />
                   <ListItemSecondaryAction>
@@ -190,6 +210,7 @@ const Cart = () => {
                         onClick={() => handleUpdateQuantity(item.product._id, item.quantity - 1)} 
                         className="icon-white"
                         size="small"
+                        disabled={item.quantity <= 1}
                       >
                         <RemoveIcon />
                       </IconButton>
@@ -226,22 +247,24 @@ const Cart = () => {
               <Typography variant="h5" className="cart-total">
                 Total: ${total.toFixed(2)}
               </Typography>
-              <Button 
-                onClick={() => setOpenConfirm(true)} 
-                className="cart-clear-button"
-              >
-                Vaciar Carrito
-              </Button>
+              <Box className="cart-actions">
+                <Button 
+                  onClick={() => setOpenConfirm(true)} 
+                  className="cart-clear-button"
+                  variant="outlined"
+                >
+                  Vaciar Carrito
+                </Button>
+                <Button
+                  onClick={handleCheckout}
+                  className="cart-checkout-button"
+                  variant="contained"
+                  size="large"
+                >
+                  Proceder al Pago
+                </Button>
+              </Box>
             </Box>
-
-            <Button
-              onClick={handleCheckout}
-              className="cart-checkout-button"
-              variant="contained"
-              size="large"
-            >
-              Proceder al Pago
-            </Button>
           </>
         )}
       </Paper>
@@ -271,8 +294,9 @@ const Cart = () => {
           <Button 
             onClick={handleClearCart} 
             className="dialog-button error"
+            variant="contained"
           >
-            Vaciar
+            Vaciar Carrito
           </Button>
         </DialogActions>
       </Dialog>

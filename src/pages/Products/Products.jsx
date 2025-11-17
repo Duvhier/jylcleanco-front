@@ -23,7 +23,7 @@ const Products = () => {
 // CORREGIR ESTAS RUTAS:
 const checkConnection = async () => {
   try {
-    await api.get('/health'); // ← Ya no tiene /api
+    await api.get('/health');
     setConnectionStatus('connected');
   } catch (error) {
     setConnectionStatus('error');
@@ -33,7 +33,7 @@ const checkConnection = async () => {
 
 const fetchProducts = async () => {
   try {
-    const response = await api.get('/products'); // ← Ya no tiene /api
+    const response = await api.get('/products'); 
     setProducts(response.data);
     setConnectionStatus('connected');
   } catch (error) {
@@ -43,7 +43,7 @@ const fetchProducts = async () => {
 
 const handleAddToCart = async (productId) => {
   try {
-    await api.post('/cart/add', { // ← Ya no tiene /api
+    await api.post('/cart/add', { 
       productId,
       quantity: 1,
     });

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; // ← USAR TU API CONFIGURADA
 
 const AuthContext = createContext(null);
 
@@ -19,13 +19,11 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/auth/me'); // ← USAR API CONFIGURADA
       setUser(response.data);
       setIsAuthenticated(true);
     } catch (error) {
+      console.error('Error verificando autenticación:', error);
       localStorage.removeItem('token');
       setUser(null);
       setIsAuthenticated(false);
@@ -36,7 +34,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await api.post('/auth/login', { // ← USAR API CONFIGURADA
         email,
         password
       });
@@ -46,13 +44,13 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       return true;
     } catch (error) {
-      throw error.response.data;
+      throw error.response?.data || { message: 'Error de conexión' };
     }
   };
 
   const register = async (username, email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await api.post('/auth/register', { // ← USAR API CONFIGURADA
         username,
         email,
         password
@@ -63,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       return true;
     } catch (error) {
-      throw error.response.data;
+      throw error.response?.data || { message: 'Error de conexión' };
     }
   };
 
@@ -74,7 +72,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   if (loading) {
-    return <div>Cargando...</div>;
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        Cargando...
+      </div>
+    );
   }
 
   return (
@@ -96,4 +103,4 @@ export const useAuth = () => {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
-}; 
+};
