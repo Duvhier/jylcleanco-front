@@ -20,10 +20,6 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
 
-  
-
-// CORREGIR ESTAS RUTAS:
-// En tu Products.js - CORREGIR LAS LLAMADAS API
 const checkConnection = async () => {
   try {
     await api.get('/health');
