@@ -20,59 +20,35 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
 
-  // Verificar conexión al backend
-  const checkConnection = async () => {
-    try {
-      await api.get('/health'); // ← Ruta correcta con /api
-      setConnectionStatus('connected');
-    } catch (error) {
-      setConnectionStatus('error');
-      console.error('Error de conexión:', error.message);
-    }
-  };
+// CORREGIR ESTAS RUTAS:
+const checkConnection = async () => {
+  try {
+    await api.get('/health'); // ← Ya no tiene /api
+    setConnectionStatus('connected');
+  } catch (error) {
+    setConnectionStatus('error');
+    console.error('Error de conexión:', error.message);
+  }
+};
 
-  useEffect(() => {
-    checkConnection();
-    fetchProducts();
-  }, []);
+const fetchProducts = async () => {
+  try {
+    const response = await api.get('/products'); // ← Ya no tiene /api
+    setProducts(response.data);
+    setConnectionStatus('connected');
+  } catch (error) {
+    // manejo de error...
+  }
+};
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/products'); // ← Ruta correcta con /api
-      setProducts(response.data);
-      setConnectionStatus('connected');
-    } catch (error) {
-      console.error('Error cargando productos:', error);
-      
-      if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
-        toast.error('Error de conexión. Verifica tu internet.');
-        setConnectionStatus('network_error');
-      } else if (error.response?.status === 404) {
-        toast.error('Endpoint no encontrado.');
-        setConnectionStatus('endpoint_error');
-      } else {
-        toast.error('Error al cargar los productos');
-        setConnectionStatus('error');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddToCart = async (productId) => {
-    if (!isAuthenticated) {
-      toast.error('Debes iniciar sesión para agregar productos al carrito');
-      return;
-    }
-
-    try {
-      await api.post('/cart/add', { // ← Ruta correcta con /api
-        productId,
-        quantity: 1,
-      });
-      toast.success('✅ Producto agregado al carrito');
-    } catch (error) {
+const handleAddToCart = async (productId) => {
+  try {
+    await api.post('/cart/add', { // ← Ya no tiene /api
+      productId,
+      quantity: 1,
+    });
+    toast.success('✅ Producto agregado al carrito');
+  } catch (error) {
       console.error('Error agregando al carrito:', error);
       
       if (error.response?.status === 401) {
