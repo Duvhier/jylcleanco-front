@@ -21,7 +21,6 @@ import ManageProducts from "./pages/ManageProducts/ManageProducts";
 import ManageUsers from "./pages/ManageUsers";
 import Sales from "./pages/Sales";
 import EditProduct from "./pages/EditProduct/EditProduct";
-import { AuthProvider } from "./contexts/AuthContext";
 
 const theme = createTheme({
   palette: {
@@ -37,15 +36,14 @@ const theme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider>
         <Router>
           <Navbar />
           <ToastContainer />
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/products" element={<Products />} />
+            <Route path="/api/login" element={<Login />} />
+            <Route path="/api/register" element={<Register />} />
+            <Route path="/api/products" element={<Products />} />
 
             {/* Rutas protegidas */}
             <Route
@@ -121,7 +119,6 @@ function App() {
             />
           </Routes>
         </Router>
-      </AuthProvider>
     </ThemeProvider>
   );
 }
