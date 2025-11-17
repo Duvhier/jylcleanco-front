@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://jylclean-back.verc
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  withCredentials: true, // Importante para CORS con credenciales
+  withCredentials: false, // CAMBIA A FALSE
 });
 
 // Interceptor para requests
@@ -17,6 +17,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     config.headers['Content-Type'] = 'application/json';
+    config.headers['Accept'] = 'application/json';
     return config;
   },
   (error) => {
