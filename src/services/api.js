@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Usar la variable de entorno o localhost como fallback
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://jylclean-backend.vercel.app';
 
 // Crear instancia de axios
 const api = axios.create({
