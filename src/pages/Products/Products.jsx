@@ -24,7 +24,7 @@ const Products = () => {
     try {
       // Usar el endpoint de health del backend
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${API_URL}/health`);
+      const response = await fetch(`${API_URL}/api/health`);
       if (response.ok) {
         setConnectionStatus('connected');
       } else {
@@ -35,7 +35,7 @@ const Products = () => {
       console.error('Error de conexión:', error.message);
     }
   };
-
+  
   const fetchProducts = async () => {
     try {
       setLoading(true);
