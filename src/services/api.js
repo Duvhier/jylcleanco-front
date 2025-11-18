@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 // IMPORTANTE: Debe apuntar al BACKEND, no al frontend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://jylclean-back.vercel.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://jylclean-back.vercel.app/api';
 
 // Verificar que la URL es correcta
 if (!API_BASE_URL.includes('jylclean-back')) {
   console.error('⚠️ API_BASE_URL está mal configurada:', API_BASE_URL);
-  console.error('⚠️ Debe ser: https://jylclean-back.vercel.app');
+  console.error('⚠️ Debe ser: https://jylclean-back.vercel.app/api');
 }
 
 console.log('🔧 API Base URL:', API_BASE_URL);
