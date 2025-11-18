@@ -20,7 +20,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -28,7 +28,19 @@ const Register = () => {
   const [modalMsg, setModalMsg] = useState({ open: false, message: '', type: 'info' });
   const [loading, setLoading] = useState(false);
 
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+  // ✅ Caracteres especiales permitidos (igual que en el backend)
+  const SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
+  
+  // ✅ Función para escapar caracteres especiales en regex
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  // ✅ Regex para validar caracteres especiales
+  const specialCharsRegex = new RegExp(`[${escapeRegex(SPECIAL_CHARS)}]`);
+  
+  // ✅ Validación completa de contraseña (igual que el backend)
+  const passwordRegex = new RegExp(
+    `^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[${escapeRegex(SPECIAL_CHARS)}]).{8,}$`
+  );
 
   const handleChange = (e) => {
     setFormData({
@@ -43,8 +55,41 @@ const Register = () => {
       lowercase: /[a-z]/.test(password),
       uppercase: /[A-Z]/.test(password),
       number: /\d/.test(password),
-      special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+      special: specialCharsRegex.test(password)
     };
+  };
+
+  const validateForm = () => {
+    const { name, email, password, confirmPassword } = formData;
+
+    if (!name.trim()) {
+      toast.error('El nombre completo es requerido');
+      return false;
+    }
+
+    if (!email.trim()) {
+      toast.error('El correo electrónico es requerido');
+      return false;
+    }
+
+    // ✅ Validación básica de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Por favor ingresa un correo electrónico válido');
+      return false;
+    }
+
+    if (!passwordRegex.test(password)) {
+      toast.error(`La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (${SPECIAL_CHARS}).`);
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return false;
+    }
+
+    return true;
   };
 
   const passwordValidation = validatePassword(formData.password);
@@ -52,24 +97,48 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!passwordRegex.test(formData.password)) {
-      toast.error('La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.');
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
-      await register(formData.username, formData.email, formData.password);
-      setModalMsg({ open: true, message: 'Registro exitoso', type: 'success' });
-      navigate('/');
+      // ✅ Usar la estructura correcta para el backend
+      const result = await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      if (result.success) {
+        setModalMsg({ 
+          open: true, 
+          message: '✅ Registro exitoso. Bienvenido a J&L Clean Co.', 
+          type: 'success' 
+        });
+        // La navegación se manejará en el AuthContext después del registro exitoso
+      } else {
+        setModalMsg({ 
+          open: true, 
+          message: result.message || 'Error al registrarse', 
+          type: 'error' 
+        });
+      }
     } catch (error) {
-      setModalMsg({ open: true, message: error.message || 'Error al registrarse', type: 'error' });
+      console.error('Registration error:', error);
+      setModalMsg({ 
+        open: true, 
+        message: 'Error de conexión. Por favor intenta nuevamente.', 
+        type: 'error' 
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleModalClose = () => {
+    setModalMsg({ ...modalMsg, open: false });
+    // ✅ Navegar al login si el registro fue exitoso
+    if (modalMsg.type === 'success') {
+      navigate('/login');
     }
   };
 
@@ -77,25 +146,30 @@ const Register = () => {
     <Container maxWidth="sm" className="register-container">
       <Paper className="register-card" elevation={0}>
         <Typography variant="h4" component="h1" gutterBottom align="center" className="register-title">
-          Registro
+          Crear Cuenta
+        </Typography>
+
+        <Typography variant="body1" align="center" color="textSecondary" sx={{ mb: 3 }}>
+          Únete a J&L Clean Co. y descubre nuestros productos de limpieza
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} className="register-form">
           <div className="form-field">
-            <label className="form-label">Nombre de Usuario</label>
+            <label className="form-label">Nombre Completo *</label>
             <input
               type="text"
-              name="username"
-              value={formData.username}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
               className="form-input"
-              placeholder="Tu nombre de usuario"
+              placeholder="Tu nombre completo"
               required
+              disabled={loading}
             />
           </div>
 
           <div className="form-field">
-            <label className="form-label">Correo Electrónico</label>
+            <label className="form-label">Correo Electrónico *</label>
             <input
               type="email"
               name="email"
@@ -104,48 +178,61 @@ const Register = () => {
               className="form-input"
               placeholder="tu@email.com"
               required
+              disabled={loading}
             />
           </div>
 
           <div className="form-field">
-            <label className="form-label">Contraseña</label>
+            <label className="form-label">Contraseña *</label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               className="form-input"
-              placeholder="Tu contraseña"
+              placeholder="Crea una contraseña segura"
               required
+              disabled={loading}
             />
             {formData.password && (
               <div className="password-requirements">
+                <h4 className="requirements-title">Requisitos de contraseña:</h4>
                 <div className={`requirement ${passwordValidation.length ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon"></span>
+                  <span className="requirement-icon">
+                    {passwordValidation.length ? '✓' : '✗'}
+                  </span>
                   Mínimo 8 caracteres
                 </div>
                 <div className={`requirement ${passwordValidation.lowercase ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon"></span>
+                  <span className="requirement-icon">
+                    {passwordValidation.lowercase ? '✓' : '✗'}
+                  </span>
                   Una letra minúscula
                 </div>
                 <div className={`requirement ${passwordValidation.uppercase ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon"></span>
+                  <span className="requirement-icon">
+                    {passwordValidation.uppercase ? '✓' : '✗'}
+                  </span>
                   Una letra mayúscula
                 </div>
                 <div className={`requirement ${passwordValidation.number ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon"></span>
+                  <span className="requirement-icon">
+                    {passwordValidation.number ? '✓' : '✗'}
+                  </span>
                   Un número
                 </div>
                 <div className={`requirement ${passwordValidation.special ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon"></span>
-                  Un carácter especial
+                  <span className="requirement-icon">
+                    {passwordValidation.special ? '✓' : '✗'}
+                  </span>
+                  Un carácter especial ({SPECIAL_CHARS})
                 </div>
               </div>
             )}
           </div>
 
           <div className="form-field">
-            <label className="form-label">Confirmar Contraseña</label>
+            <label className="form-label">Confirmar Contraseña *</label>
             <input
               type="password"
               name="confirmPassword"
@@ -154,10 +241,16 @@ const Register = () => {
               className="form-input"
               placeholder="Confirma tu contraseña"
               required
+              disabled={loading}
             />
             {formData.confirmPassword && formData.password !== formData.confirmPassword && (
               <div className="message error">
-                Las contraseñas no coinciden
+                ❌ Las contraseñas no coinciden
+              </div>
+            )}
+            {formData.confirmPassword && formData.password === formData.confirmPassword && (
+              <div className="message success">
+                ✅ Las contraseñas coinciden
               </div>
             )}
           </div>
@@ -168,39 +261,46 @@ const Register = () => {
             disabled={loading}
           >
             {loading && <span className="loading-spinner"></span>}
-            {loading ? 'Registrando...' : 'Registrarse'}
+            {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
           </button>
 
-          <Button
-            fullWidth
-            variant="text"
-            onClick={() => navigate('/login')}
-            className="login-link"
-          >
-            ¿Ya tienes cuenta? Inicia sesión
-          </Button>
+          <div className="login-section">
+            <Typography variant="body2" align="center" color="textSecondary" sx={{ mb: 1 }}>
+              ¿Ya tienes una cuenta?
+            </Typography>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => navigate('/login')}
+              className="login-link"
+              disabled={loading}
+            >
+              Iniciar Sesión
+            </Button>
+          </div>
         </Box>
       </Paper>
 
       <Dialog 
         open={modalMsg.open} 
-        onClose={() => setModalMsg({ ...modalMsg, open: false })}
+        onClose={handleModalClose}
         PaperProps={{ className: 'register-dialog' }}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle className="dialog-title">
-          {modalMsg.type === 'success' ? 'Éxito' : 'Error'}
+        <DialogTitle className={`dialog-title ${modalMsg.type}`}>
+          {modalMsg.type === 'success' ? '🎉 ¡Registro Exitoso!' : '❌ Error'}
         </DialogTitle>
         <DialogContent className="dialog-content">
-          <Typography>{modalMsg.message}</Typography>
+          <Typography variant="body1">{modalMsg.message}</Typography>
         </DialogContent>
         <DialogActions>
           <Button 
-            onClick={() => setModalMsg({ ...modalMsg, open: false })} 
-            className="dialog-button"
+            onClick={handleModalClose}
+            className={`dialog-button ${modalMsg.type === 'success' ? 'success' : 'error'}`}
+            variant={modalMsg.type === 'success' ? 'contained' : 'outlined'}
           >
-            Cerrar
+            {modalMsg.type === 'success' ? 'Continuar' : 'Cerrar'}
           </Button>
         </DialogActions>
       </Dialog>

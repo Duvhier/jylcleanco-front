@@ -26,22 +26,40 @@ const Login = () => {
     setError('');
     
     try {
-      await login(formData.email, formData.password);
-      navigate('/');
+      const result = await login(formData.email, formData.password);
+      
+      if (result.success) {
+        navigate('/');
+      } else {
+        setError(result.message);
+      }
     } catch (error) {
-      setError(error.message || 'Error al iniciar sesión');
+      setError('Error de conexión. Verifica que el servidor esté funcionando.');
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleForgotPassword = async () => {
+    if (!forgotEmail) {
+      alert('Por favor ingresa tu correo electrónico');
+      return;
+    }
+
     setLoadingForgot(true);
     try {
-      await axios.post('http://localhost:5000/api/auth/forgot-password', { email: forgotEmail });
-      alert('Si el correo existe, se ha enviado un enlace de recuperación.');
-      setOpenForgot(false);
-      setForgotEmail('');
+      const response = await axios.post('http://localhost:5000/api/auth/forgot-password', { 
+        email: forgotEmail 
+      });
+      
+      if (response.data.success) {
+        alert('Si el correo existe, se ha enviado un enlace de recuperación.');
+        setOpenForgot(false);
+        setForgotEmail('');
+      } else {
+        alert(response.data.message || 'Error al procesar la solicitud');
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Error al enviar el correo de recuperación');
     } finally {
@@ -73,6 +91,7 @@ const Login = () => {
               className="form-input"
               placeholder="tu@email.com"
               required
+              disabled={loading}
             />
           </div>
 
@@ -86,6 +105,7 @@ const Login = () => {
               className="form-input"
               placeholder="Tu contraseña"
               required
+              disabled={loading}
             />
           </div>
 
@@ -98,29 +118,31 @@ const Login = () => {
             {loading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
           </button>
 
-          <Button 
-            fullWidth 
-            variant="text" 
-            onClick={() => navigate('/register')} 
-            className="link-button"
-          >
-            ¿No tienes cuenta? Regístrate
-          </Button>
-          
-          <Button 
-            fullWidth 
-            variant="text" 
-            onClick={() => setOpenForgot(true)} 
-            className="link-button bold"
-          >
-            ¿Olvidaste tu contraseña?
-          </Button>
+          <div className="login-links">
+            <Button 
+              variant="text" 
+              onClick={() => navigate('/register')} 
+              className="link-button"
+              disabled={loading}
+            >
+              ¿No tienes cuenta? Regístrate
+            </Button>
+            
+            <Button 
+              variant="text" 
+              onClick={() => setOpenForgot(true)} 
+              className="link-button bold"
+              disabled={loading}
+            >
+              ¿Olvidaste tu contraseña?
+            </Button>
+          </div>
         </Box>
       </Paper>
 
       <Dialog 
         open={openForgot} 
-        onClose={() => setOpenForgot(false)} 
+        onClose={() => !loadingForgot && setOpenForgot(false)} 
         PaperProps={{ className: 'glass-dialog' }}
         maxWidth="sm"
         fullWidth
@@ -136,17 +158,22 @@ const Login = () => {
               className="form-input"
               placeholder="tu@email.com"
               autoFocus
+              disabled={loadingForgot}
             />
           </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenForgot(false)} className="dialog-button">
+          <Button 
+            onClick={() => setOpenForgot(false)} 
+            className="dialog-button"
+            disabled={loadingForgot}
+          >
             Cancelar
           </Button>
           <Button 
             onClick={handleForgotPassword} 
-            className="dialog-button" 
-            disabled={loadingForgot}
+            className="dialog-button primary" 
+            disabled={loadingForgot || !forgotEmail}
           >
             {loadingForgot ? 'Enviando...' : 'Enviar'}
           </Button>

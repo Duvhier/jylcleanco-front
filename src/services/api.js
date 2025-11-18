@@ -1,92 +1,84 @@
+// src/services/api.js
 import axios from 'axios';
 
-// IMPORTANTE: Debe apuntar al BACKEND, no al frontend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://jylclean-back.vercel.app/api';
-
-// Verificar que la URL es correcta
-if (!API_BASE_URL.includes('jylclean-back')) {
-  console.error('⚠️ API_BASE_URL está mal configurada:', API_BASE_URL);
-  console.error('⚠️ Debe ser: https://jylclean-back.vercel.app/api');
-}
-
-console.log('🔧 API Base URL:', API_BASE_URL);
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
-  withCredentials: false,
+// Configuración base de Axios
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+  },
 });
 
-// Interceptor para requests
-api.interceptors.request.use(
+// Interceptor para agregar el token a las requests
+API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // ✅ AGREGAR /api si no está presente
-    if (config.url && !config.url.startsWith('/api/') && !config.url.startsWith('/health')) {
-      config.url = `/api${config.url}`;
-    }
-    
-    const fullUrl = `${config.baseURL}${config.url}`;
-    console.log(`📤 ${config.method?.toUpperCase()} ${fullUrl}`);
-    
-    // VALIDACIÓN: Asegurar que NO estamos llamando al frontend
-    if (fullUrl.includes('jylcleanco-front')) {
-      console.error('❌ ERROR: Intentando llamar al frontend en lugar del backend!');
-      console.error('❌ URL incorrecta:', fullUrl);
-      console.error('✅ Debe ser:', 'https://jylclean-back.vercel.app' + config.url);
-      throw new Error('Configuración incorrecta: llamando al frontend en lugar del backend');
-    }
-    
     return config;
   },
   (error) => {
-    console.error('❌ Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Interceptor para responses
-api.interceptors.response.use(
-  (response) => {
-    console.log(`✅ ${response.status} ${response.config.url}`);
-    return response;
-  },
+// Interceptor para manejar respuestas
+API.interceptors.response.use(
+  (response) => response,
   (error) => {
-    if (error.response) {
-      console.error('❌ Response Error:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        url: error.config?.url,
-        fullUrl: `${error.config?.baseURL}${error.config?.url}`
-      });
-    } else if (error.request) {
-      console.error('❌ No Response:', {
-        message: 'El servidor no respondió',
-        url: error.config?.url,
-        baseURL: error.config?.baseURL,
-        timeout: error.code === 'ECONNABORTED'
-      });
-    } else {
-      console.error('❌ Setup Error:', error.message);
-    }
-    
     if (error.response?.status === 401) {
-      console.warn('⚠️ Sesión expirada');
       localStorage.removeItem('token');
-      window.dispatchEvent(new Event('storage'));
+      localStorage.removeItem('user');
+      window.location.href = '/login';
     }
-    
     return Promise.reject(error);
   }
 );
 
-export default api;
+// Endpoints de Autenticación
+export const authAPI = {
+  login: (credentials) => API.post('/auth/login', credentials),
+  register: (userData) => API.post('/auth/register', userData),
+  getMe: () => API.get('/auth/me'),
+  forgotPassword: (email) => API.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => API.post(`/auth/reset-password/${token}`, { password }),
+};
+
+// Endpoints de Productos
+export const productsAPI = {
+  getAll: () => API.get('/products'),
+  getById: (id) => API.get(`/products/${id}`),
+  create: (productData) => API.post('/products', productData),
+  update: (id, productData) => API.put(`/products/${id}`, productData),
+  delete: (id) => API.delete(`/products/${id}`),
+};
+
+// Endpoints de Carrito
+export const cartAPI = {
+  get: () => API.get('/cart'),
+  add: (productData) => API.post('/cart/add', productData),
+  update: (productId, quantity) => API.put(`/cart/update/${productId}`, { quantity }),
+  remove: (productId) => API.delete(`/cart/remove/${productId}`),
+  clear: () => API.delete('/cart/clear'),
+};
+
+// Endpoints de Ventas
+export const salesAPI = {
+  getAll: () => API.get('/sales'),
+  getMySales: () => API.get('/sales/my-sales'),
+  getById: (id) => API.get(`/sales/${id}`),
+  create: (saleData) => API.post('/sales', saleData),
+  updateStatus: (id, status) => API.put(`/sales/${id}/status`, { status }),
+};
+
+// Endpoints de Usuarios (Solo SuperUser)
+export const usersAPI = {
+  getAll: () => API.get('/users'),
+  getById: (id) => API.get(`/users/${id}`),
+  update: (id, userData) => API.put(`/users/${id}`, userData),
+  delete: (id) => API.delete(`/users/${id}`),
+};
+
+export default API;

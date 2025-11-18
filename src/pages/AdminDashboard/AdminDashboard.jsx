@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import axios from 'axios';
-import api from "../../services/api";
 import {
   ShoppingCart,
   People,
@@ -16,22 +14,13 @@ import {
   LocalShipping,
   Assessment
 } from '@mui/icons-material';
+import { productsAPI, usersAPI, salesAPI } from '../../services/api'; // ✅ Usar APIs específicas
+import { useAuth } from '../../contexts/AuthContext'; // ✅ Para verificar permisos
 import './AdminDashboard.css';
-import { Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { user, isAdmin, isSuperUser } = useAuth(); // ✅ Verificar permisos
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalUsers: 0,
@@ -40,8 +29,25 @@ const AdminDashboard = () => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [monthlyRevenue, setMonthlyRevenue] = useState([]);
-  const [showRevenueChart, setShowRevenueChart] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('checking');
+
+  // ✅ Verificar permisos - Solo Admin y SuperUser pueden acceder
+  if (!isAdmin && !isSuperUser) {
+    return (
+      <div className="admin-container">
+        <div className="access-denied">
+          <h2>Acceso Denegado</h2>
+          <p>No tienes permisos para acceder al panel de administración.</p>
+          <button 
+            className="back-button"
+            onClick={() => navigate('/')}
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     fetchDashboardData();
@@ -49,31 +55,47 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Intentar obtener datos de diferentes endpoints disponibles
-      const requests = [
-        // Obtener productos
-        api.get('/products', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-        
-        // Obtener usuarios (si existe el endpoint)
-        api.get('/users', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-        
-        // Obtener ventas (si existe el endpoint)
-        api.get('/sales', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
-      ];
+      setLoading(true);
+      setConnectionStatus('checking');
 
-      const [productsResponse, usersResponse, salesResponse] = await Promise.all(requests);
+      // ✅ Obtener datos usando las APIs específicas
+      const [productsResponse, usersResponse, salesResponse] = await Promise.allSettled([
+        productsAPI.getAll(),
+        isSuperUser ? usersAPI.getAll() : Promise.resolve({ data: { data: [] } }), // Solo SuperUser puede ver usuarios
+        salesAPI.getAll()
+      ]);
 
-      // Calcular estadísticas basadas en los datos disponibles
-      const totalProducts = productsResponse.data?.length || 0;
-      const totalUsers = usersResponse.data?.length || 0;
-      const totalSales = salesResponse.data?.length || 0;
-      
-      // Calcular ingresos totales
-      const totalRevenue = salesResponse.data?.reduce((sum, sale) => {
-        return sum + (sale.total || 0);
-      }, 0) || 0;
+      // ✅ Procesar respuesta de productos
+      let totalProducts = 0;
+      if (productsResponse.status === 'fulfilled' && productsResponse.value.data.success) {
+        totalProducts = productsResponse.value.data.data?.length || 0;
+      }
+
+      // ✅ Procesar respuesta de usuarios (solo para SuperUser)
+      let totalUsers = 0;
+      if (usersResponse.status === 'fulfilled' && usersResponse.value.data.success) {
+        totalUsers = usersResponse.value.data.data?.length || 0;
+      }
+
+      // ✅ Procesar respuesta de ventas
+      let totalSales = 0;
+      let totalRevenue = 0;
+      let recentSales = [];
+
+      if (salesResponse.status === 'fulfilled' && salesResponse.value.data.success) {
+        const salesData = salesResponse.value.data.data || [];
+        totalSales = salesData.length;
+        totalRevenue = salesData.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
+        
+        // ✅ Obtener ventas recientes para actividad
+        recentSales = salesData
+          .slice(0, 5)
+          .map(sale => ({
+            type: 'sale',
+            description: `Venta #${sale.saleNumber || sale._id} - $${sale.totalAmount}`,
+            timestamp: new Date(sale.createdAt).toLocaleDateString('es-ES')
+          }));
+      }
 
       setStats({
         totalProducts,
@@ -82,45 +104,39 @@ const AdminDashboard = () => {
         totalRevenue
       });
 
-      // Calcular ingresos mensuales
-      const now = new Date();
-      const year = now.getFullYear();
-      const monthly = Array(12).fill(0);
-      (salesResponse.data || []).forEach(sale => {
-        if (sale.date) {
-          const d = new Date(sale.date);
-          if (d.getFullYear() === year) {
-            monthly[d.getMonth()] += sale.total || 0;
-          }
-        }
-      });
-      setMonthlyRevenue(monthly);
-
-      // Simular actividad reciente
+      // ✅ Combinar actividad reciente
       const mockActivity = [
+        ...recentSales,
         {
-          type: 'sale',
-          description: 'Nueva venta realizada',
-          timestamp: 'Hace 5 minutos'
-        },
-        {
-          type: 'user',
-          description: 'Usuario registrado',
-          timestamp: 'Hace 15 minutos'
-        },
-        {
-          type: 'product',
-          description: 'Producto agregado al inventario',
-          timestamp: 'Hace 1 hora'
+          type: 'info',
+          description: 'Panel de administración cargado',
+          timestamp: 'Ahora'
         }
       ];
 
       setRecentActivity(mockActivity);
+      setConnectionStatus('connected');
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       
-      // Si hay error, usar datos por defecto
+      // ✅ Manejar diferentes tipos de errores
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        setConnectionStatus('network_error');
+        toast.error('Error de conexión. Verifica que el backend esté ejecutándose.');
+      } else if (error.response?.status === 401) {
+        setConnectionStatus('auth_error');
+        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
+        navigate('/login');
+      } else if (error.response?.status === 403) {
+        setConnectionStatus('access_denied');
+        toast.error('No tienes permisos para acceder a estos datos.');
+      } else {
+        setConnectionStatus('error');
+        toast.error('Error al cargar los datos del dashboard');
+      }
+
+      // ✅ Datos por defecto en caso de error
       setStats({
         totalProducts: 0,
         totalUsers: 0,
@@ -128,12 +144,12 @@ const AdminDashboard = () => {
         totalRevenue: 0
       });
       
-      setRecentActivity([]);
-      
-      // Solo mostrar error si es un error de red, no de datos faltantes
-      if (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
-        toast.error('Error de conexión. Verificando estado del sistema...');
-      }
+      setRecentActivity([{
+        type: 'error',
+        description: 'Error al cargar datos recientes',
+        timestamp: 'Ahora'
+      }]);
+
     } finally {
       setLoading(false);
     }
@@ -148,13 +164,17 @@ const AdminDashboard = () => {
         navigate('/admin/manage-products');
         break;
       case 'manage-users':
-        navigate('/admin/manage-users');
+        if (isSuperUser) {
+          navigate('/admin/manage-users');
+        } else {
+          toast.error('Solo SuperUser puede gestionar usuarios');
+        }
         break;
       case 'view-sales':
         navigate('/admin/sales');
         break;
       case 'reports':
-        setShowRevenueChart(true);
+        toast.info('Reportes detallados - Funcionalidad en desarrollo');
         break;
       case 'inventory':
         toast.info('Control de inventario - Funcionalidad en desarrollo');
@@ -164,16 +184,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const getConnectionStatusMessage = () => {
+    const statusMessages = {
+      checking: { text: '🔄 Conectando con el servidor...', className: 'status-checking' },
+      connected: { text: '✅ Conectado al servidor', className: 'status-connected' },
+      network_error: { text: '🌐 Error de red - Verifica el backend', className: 'status-error' },
+      auth_error: { text: '🔐 Error de autenticación', className: 'status-error' },
+      access_denied: { text: '🚫 Acceso denegado', className: 'status-warning' },
+      error: { text: '❌ Error de conexión', className: 'status-error' },
+    };
+    
+    return statusMessages[connectionStatus] || statusMessages.error;
+  };
+
   if (loading) {
     return (
       <div className="admin-container">
         <div className="admin-loading">
           <span className="admin-loading-spinner"></span>
           Cargando dashboard...
+          <div className="loading-subtitle">
+            Obteniendo datos del sistema
+          </div>
         </div>
       </div>
     );
   }
+
+  const statusInfo = getConnectionStatusMessage();
 
   return (
     <div className="admin-container">
@@ -181,94 +219,68 @@ const AdminDashboard = () => {
       <div className="admin-header">
         <h1 className="admin-title">Panel de Administración</h1>
         <p className="admin-subtitle">
-          Gestiona productos, usuarios, ventas y obtén insights de tu negocio
+          Bienvenido, {user?.name} ({user?.role})
         </p>
-      </div>
+        
+        {/* ✅ Estado de conexión */}
+        <div className={`connection-status ${statusInfo.className}`}>
+          <span className="status-indicator"></span>
+          {statusInfo.text}
+        </div>
 
-      {/* Quick Stats */}
-      <div className="quick-stats">
-        <div className="quick-stat">
-          <div className="quick-stat-number">{stats.totalProducts}</div>
-          <div className="quick-stat-label">Productos</div>
-        </div>
-        <div className="quick-stat">
-          <div className="quick-stat-number">{stats.totalUsers}</div>
-          <div className="quick-stat-label">Usuarios</div>
-        </div>
-        <div className="quick-stat">
-          <div className="quick-stat-number">{stats.totalSales}</div>
-          <div className="quick-stat-label">Ventas</div>
-        </div>
-        <div className="quick-stat">
-          <div className="quick-stat-number">${stats.totalRevenue.toFixed(2)}</div>
-          <div className="quick-stat-label">Ingresos</div>
-        </div>
+        {(connectionStatus === 'error' || connectionStatus === 'network_error') && (
+          <button 
+            onClick={fetchDashboardData}
+            className="reconnect-button"
+          >
+            🔄 Reintentar conexión
+          </button>
+        )}
       </div>
-
-      {/* Gráfico de ingresos mensuales (solo si showRevenueChart) */}
-      {showRevenueChart && (
-        <div className="revenue-chart-modal-overlay" onClick={() => setShowRevenueChart(false)}>
-          <div className="revenue-chart-modal" onClick={e => e.stopPropagation()}>
-            <button className="close-modal-btn" onClick={() => setShowRevenueChart(false)}>×</button>
-            <h2 className="revenue-chart-title">Ingresos Mensuales ({new Date().getFullYear()})</h2>
-            <Bar
-              data={{
-                labels: [
-                  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                ],
-                datasets: [
-                  {
-                    label: 'Ingresos ($)',
-                    data: monthlyRevenue,
-                    backgroundColor: '#1976d2',
-                    borderRadius: 6
-                  }
-                ]
-              }}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: { display: false },
-                  title: { display: false }
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: { callback: value => `$${value}` }
-                  }
-                }
-              }}
-              height={320}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card" onClick={() => handleAction('manage-products')}>
-          <div className="stat-icon">📦</div>
-          <div className="stat-number">{stats.totalProducts}</div>
-          <div className="stat-label">Productos Totales</div>
+          <div className="stat-icon">
+            <Inventory />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">{stats.totalProducts}</div>
+            <div className="stat-label">Productos Totales</div>
+          </div>
         </div>
         
         <div className="stat-card" onClick={() => handleAction('manage-users')}>
-          <div className="stat-icon">👥</div>
-          <div className="stat-number">{stats.totalUsers}</div>
-          <div className="stat-label">Usuarios Registrados</div>
+          <div className="stat-icon">
+            <People />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">{stats.totalUsers}</div>
+            <div className="stat-label">Usuarios Registrados</div>
+            {!isSuperUser && (
+              <div className="stat-note">Solo SuperUser</div>
+            )}
+          </div>
         </div>
         
         <div className="stat-card" onClick={() => handleAction('view-sales')}>
-          <div className="stat-icon">💰</div>
-          <div className="stat-number">{stats.totalSales}</div>
-          <div className="stat-label">Ventas Realizadas</div>
+          <div className="stat-icon">
+            <ShoppingCart />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">{stats.totalSales}</div>
+            <div className="stat-label">Ventas Realizadas</div>
+          </div>
         </div>
         
-        <div className="stat-card" onClick={() => handleAction('reports')}>
-          <div className="stat-icon">📊</div>
-          <div className="stat-number">${stats.totalRevenue.toFixed(2)}</div>
-          <div className="stat-label">Ingresos Totales</div>
+        <div className="stat-card revenue" onClick={() => handleAction('reports')}>
+          <div className="stat-icon">
+            <AttachMoney />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">${stats.totalRevenue.toFixed(2)}</div>
+            <div className="stat-label">Ingresos Totales</div>
+          </div>
         </div>
       </div>
 
@@ -281,23 +293,27 @@ const AdminDashboard = () => {
             onClick={() => handleAction('add-product')}
           >
             <Add className="action-icon" />
-            Agregar Producto
+            <span>Agregar Producto</span>
           </button>
           
           <button 
-            className="action-button"
+            className="action-button secondary"
             onClick={() => handleAction('manage-products')}
           >
             <Inventory className="action-icon" />
-            Gestionar Productos
+            <span>Gestionar Productos</span>
           </button>
           
           <button 
-            className="action-button"
+            className={`action-button ${isSuperUser ? 'secondary' : 'disabled'}`}
             onClick={() => handleAction('manage-users')}
+            disabled={!isSuperUser}
           >
             <People className="action-icon" />
-            Gestionar Usuarios
+            <span>
+              Gestionar Usuarios
+              {!isSuperUser && <small>Solo SuperUser</small>}
+            </span>
           </button>
           
           <button 
@@ -305,7 +321,7 @@ const AdminDashboard = () => {
             onClick={() => handleAction('view-sales')}
           >
             <ShoppingCart className="action-icon" />
-            Ver Ventas
+            <span>Ver Ventas</span>
           </button>
           
           <button 
@@ -313,34 +329,47 @@ const AdminDashboard = () => {
             onClick={() => handleAction('reports')}
           >
             <Assessment className="action-icon" />
-            Reportes
+            <span>Reportes</span>
           </button>
           
           <button 
-            className="action-button"
+            className="action-button info"
             onClick={() => handleAction('inventory')}
           >
             <LocalShipping className="action-icon" />
-            Inventario
+            <span>Inventario</span>
           </button>
         </div>
       </div>
 
       {/* Recent Activity */}
       <div className="activity-section">
-        <h2 className="activity-title">Actividad Reciente</h2>
+        <div className="activity-header">
+          <h2 className="activity-title">Actividad Reciente</h2>
+          <button 
+            onClick={fetchDashboardData}
+            className="refresh-button"
+            title="Actualizar actividad"
+          >
+            🔄
+          </button>
+        </div>
         <div className="activity-list">
           {recentActivity.length === 0 ? (
-            <div style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center', padding: 'var(--spacing-lg)' }}>
-              No hay actividad reciente
+            <div className="activity-empty">
+              <div className="empty-icon">📊</div>
+              <p>No hay actividad reciente</p>
+              <small>Los datos de actividad se cargarán automáticamente</small>
             </div>
           ) : (
             recentActivity.map((activity, index) => (
-              <div key={index} className="activity-item">
-                <div className={`activity-icon ${activity.type}`}>
+              <div key={index} className={`activity-item ${activity.type}`}>
+                <div className="activity-icon">
                   {activity.type === 'sale' && '💰'}
                   {activity.type === 'user' && '👤'}
                   {activity.type === 'product' && '📦'}
+                  {activity.type === 'info' && 'ℹ️'}
+                  {activity.type === 'error' && '❌'}
                 </div>
                 <div className="activity-content">
                   <div className="activity-text">{activity.description}</div>
@@ -351,6 +380,22 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Debug Info (solo en desarrollo) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="debug-info">
+          <details>
+            <summary>Información de Debug</summary>
+            <p><strong>Usuario:</strong> {user?.name} ({user?.role})</p>
+            <p><strong>Permisos:</strong> Admin: {isAdmin ? 'Sí' : 'No'}, SuperUser: {isSuperUser ? 'Sí' : 'No'}</p>
+            <p><strong>Estado conexión:</strong> {connectionStatus}</p>
+            <p><strong>Productos:</strong> {stats.totalProducts}</p>
+            <p><strong>Usuarios:</strong> {stats.totalUsers}</p>
+            <p><strong>Ventas:</strong> {stats.totalSales}</p>
+            <p><strong>Ingresos:</strong> ${stats.totalRevenue.toFixed(2)}</p>
+          </details>
+        </div>
+      )}
     </div>
   );
 };

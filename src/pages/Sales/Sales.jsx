@@ -14,11 +14,16 @@ const Sales = () => {
   const [users, setUsers] = useState([]);
   const [selectedSale, setSelectedSale] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [userRole, setUserRole] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(userData.role || '');
     fetchSales();
-    fetchUsers();
+    if (userData.role === 'Admin' || userData.role === 'SuperUser') {
+      fetchUsers();
+    }
   }, []);
 
   useEffect(() => {
@@ -29,11 +34,25 @@ const Sales = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await api.get('/sales', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      let response;
+      
+      // Diferente endpoint según el rol del usuario
+      if (userData.role === 'Admin' || userData.role === 'SuperUser') {
+        response = await api.get('/sales', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        // Para usuarios normales, usar el endpoint de sus propias ventas
+        response = await api.get('/sales/my-sales', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      
       setSales(response.data);
     } catch (error) {
+      console.error('Error fetching sales:', error);
       toast.error('Error al cargar las ventas');
     } finally {
       setLoading(false);
@@ -48,17 +67,22 @@ const Sales = () => {
       });
       setUsers(response.data);
     } catch (error) {
-      // No mostrar toast para usuarios
+      console.error('Error fetching users:', error);
+      // No mostrar toast para evitar confusión
     }
   };
 
   const filterSales = () => {
     let filtered = sales;
     if (searchId.trim()) {
-      filtered = filtered.filter(sale => (sale._id || sale.id || '').toLowerCase().includes(searchId.toLowerCase()));
+      filtered = filtered.filter(sale => 
+        (sale._id || sale.id || '').toLowerCase().includes(searchId.toLowerCase())
+      );
     }
-    if (userFilter) {
-      filtered = filtered.filter(sale => (sale.user?._id || sale.user?.id) === userFilter);
+    if (userFilter && (userRole === 'Admin' || userRole === 'SuperUser')) {
+      filtered = filtered.filter(sale => 
+        (sale.user?._id || sale.user?.id) === userFilter
+      );
     }
     setFilteredSales(filtered);
   };
@@ -73,12 +97,21 @@ const Sales = () => {
     setSelectedSale(null);
   };
 
+  // Ocultar filtro de usuarios si no es admin
+  const shouldShowUserFilter = userRole === 'Admin' || userRole === 'SuperUser';
+
   return (
     <div className="sales-container">
       <button className="back-admin-btn" onClick={() => navigate('/admin')}>
         ← Volver al Panel Admin
       </button>
-      <h1 className="sales-title">Ventas Realizadas</h1>
+      <h1 className="sales-title">
+        {userRole === 'Admin' || userRole === 'SuperUser' 
+          ? 'Ventas Realizadas' 
+          : 'Mis Compras'
+        }
+      </h1>
+      
       <div className="sales-filters">
         <input
           type="text"
@@ -87,19 +120,23 @@ const Sales = () => {
           onChange={e => setSearchId(e.target.value)}
           className="sales-filter-input"
         />
-        <select
-          value={userFilter}
-          onChange={e => setUserFilter(e.target.value)}
-          className="sales-filter-select"
-        >
-          <option value="">Todos los usuarios</option>
-          {users.map(user => (
-            <option key={user._id || user.id} value={user._id || user.id}>
-              {user.username || user.name || user.email}
-            </option>
-          ))}
-        </select>
+        
+        {shouldShowUserFilter && (
+          <select
+            value={userFilter}
+            onChange={e => setUserFilter(e.target.value)}
+            className="sales-filter-select"
+          >
+            <option value="">Todos los usuarios</option>
+            {users.map(user => (
+              <option key={user._id || user.id} value={user._id || user.id}>
+                {user.username || user.name || user.email}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
+      
       {loading ? (
         <div className="loading">Cargando ventas...</div>
       ) : (
@@ -107,7 +144,7 @@ const Sales = () => {
           <thead>
             <tr>
               <th>ID</th>
-              <th>Usuario</th>
+              {shouldShowUserFilter && <th>Usuario</th>}
               <th>Total</th>
               <th>Fecha</th>
               <th>Acciones</th>
@@ -116,13 +153,17 @@ const Sales = () => {
           <tbody>
             {filteredSales.length === 0 ? (
               <tr>
-                <td colSpan="5">No hay ventas registradas.</td>
+                <td colSpan={shouldShowUserFilter ? "5" : "4"}>
+                  No hay ventas registradas.
+                </td>
               </tr>
             ) : (
               filteredSales.map(sale => (
                 <tr key={sale._id || sale.id}>
-                  <td>{sale._id || sale.id}</td>
-                  <td>{sale.user?.username || sale.user?.name || 'N/A'}</td>
+                  <td>{(sale._id || sale.id).substring(0, 8)}...</td>
+                  {shouldShowUserFilter && (
+                    <td>{sale.user?.username || sale.user?.name || 'N/A'}</td>
+                  )}
                   <td>${sale.total?.toFixed(2) || '0.00'}</td>
                   <td>{sale.date ? new Date(sale.date).toLocaleString() : 'N/A'}</td>
                   <td>
@@ -136,14 +177,19 @@ const Sales = () => {
           </tbody>
         </table>
       )}
+      
       {showModal && selectedSale && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <button className="close-modal-btn" onClick={closeModal}>×</button>
-            <h2>Detalle de la Venta</h2>
+            <h2>Detalle de la {userRole === 'Admin' || userRole === 'SuperUser' ? 'Venta' : 'Compra'}</h2>
             <p><strong>ID:</strong> {selectedSale._id || selectedSale.id}</p>
-            <p><strong>Usuario:</strong> {selectedSale.user?.username || selectedSale.user?.name || 'N/A'}</p>
-            <p><strong>Correo:</strong> {selectedSale.user?.email || 'N/A'}</p>
+            {shouldShowUserFilter && (
+              <>
+                <p><strong>Usuario:</strong> {selectedSale.user?.username || selectedSale.user?.name || 'N/A'}</p>
+                <p><strong>Correo:</strong> {selectedSale.user?.email || 'N/A'}</p>
+              </>
+            )}
             <p><strong>Total:</strong> ${selectedSale.total?.toFixed(2) || '0.00'}</p>
             <p><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString() : 'N/A'}</p>
             <h3>Productos:</h3>
@@ -165,4 +211,4 @@ const Sales = () => {
   );
 };
 
-export default Sales; 
+export default Sales;
