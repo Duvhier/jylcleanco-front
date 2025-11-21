@@ -23,7 +23,7 @@ const Products = () => {
   const checkConnection = async () => {
     try {
       // Usar el endpoint de health del backend
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://jylclean-backend.vercel.app';
       const response = await fetch(`${API_URL}/api/health`);
       if (response.ok) {
         setConnectionStatus('connected');
