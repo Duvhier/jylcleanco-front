@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ArrowBack, 
-  Edit, 
-  Delete, 
-  Block, 
-  CheckCircle,
-  Person,
-  AdminPanelSettings,
-  SupervisedUserCircle
-} from '@mui/icons-material';
-import { usersAPI } from '../../services/api'; // ✅ Usar API específica
-import { useAuth } from '../../contexts/AuthContext'; // ✅ Para verificar permisos
+  FiArrowLeft,
+  FiEdit2,
+  FiTrash2,
+  FiUser,
+  FiShield,
+  FiUsers,
+  FiCheckCircle,
+  FiXCircle,
+  FiRefreshCw,
+  FiAlertCircle
+} from 'react-icons/fi';
+import { usersAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import './ManageUsers.css';
 
 const ManageUsers = () => {
@@ -20,23 +23,28 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
   const navigate = useNavigate();
-  const { user: currentUser, isSuperUser } = useAuth(); // ✅ Solo SuperUser puede gestionar usuarios
+  const { user: currentUser, isSuperUser } = useAuth();
 
-  // ✅ Verificar permisos - Solo SuperUser puede gestionar usuarios
+  // Verificar permisos - Solo SuperUser puede gestionar usuarios
   if (!isSuperUser) {
     return (
       <div className="manage-users-container">
-        <div className="access-denied">
+        <motion.div 
+          className="access-denied glass-card"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <FiAlertCircle className="denied-icon" />
           <h2>Acceso Denegado</h2>
           <p>Solo los usuarios SuperUser pueden gestionar otros usuarios.</p>
           <button 
             className="back-button"
             onClick={() => navigate('/admin')}
           >
-            <ArrowBack />
+            <FiArrowLeft />
             Volver al Panel de Administración
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -84,7 +92,6 @@ const ManageUsers = () => {
   };
 
   const handleEditUser = (userId) => {
-    // Navegar a la edición de usuario (si existe la funcionalidad)
     toast.info(`Editar usuario ${userId} - Funcionalidad en desarrollo`);
   };
 
@@ -99,7 +106,6 @@ const ManageUsers = () => {
       return;
     }
 
-    // Evitar que el SuperUser se desactive a sí mismo
     if (userId === currentUser._id) {
       toast.error('No puedes desactivar tu propio usuario');
       return;
@@ -118,17 +124,7 @@ const ManageUsers = () => {
       }
     } catch (error) {
       console.error('Error updating user status:', error);
-      
-      if (error.response?.status === 401) {
-        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
-        navigate('/login');
-      } else if (error.response?.status === 403) {
-        toast.error('No tienes permisos para modificar usuarios.');
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error(`Error al ${action} el usuario`);
-      }
+      toast.error(error.response?.data?.message || `Error al ${action} el usuario`);
     }
   };
 
@@ -136,15 +132,12 @@ const ManageUsers = () => {
     const user = users.find(u => u._id === userId);
     if (!user) return;
 
-    // Determinar el nuevo rol
-    const newRole = currentRole === 'User' ? 'Admin' : 
-                   currentRole === 'Admin' ? 'User' : 'User';
+    const newRole = currentRole === 'User' ? 'Admin' : 'User';
 
     if (!window.confirm(`¿Cambiar el rol de "${user.name}" de ${currentRole} a ${newRole}?`)) {
       return;
     }
 
-    // Evitar que el SuperUser cambie su propio rol
     if (userId === currentUser._id) {
       toast.error('No puedes cambiar tu propio rol');
       return;
@@ -163,17 +156,7 @@ const ManageUsers = () => {
       }
     } catch (error) {
       console.error('Error changing user role:', error);
-      
-      if (error.response?.status === 401) {
-        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
-        navigate('/login');
-      } else if (error.response?.status === 403) {
-        toast.error('No tienes permisos para cambiar roles de usuario.');
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Error al cambiar el rol del usuario');
-      }
+      toast.error(error.response?.data?.message || 'Error al cambiar el rol del usuario');
     }
   };
 
@@ -181,7 +164,6 @@ const ManageUsers = () => {
     const user = users.find(u => u._id === userId);
     if (!user) return;
 
-    // Evitar que el SuperUser se elimine a sí mismo
     if (userId === currentUser._id) {
       toast.error('No puedes eliminar tu propio usuario');
       return;
@@ -198,44 +180,18 @@ const ManageUsers = () => {
       setUsers(users.filter(u => u._id !== userId));
     } catch (error) {
       console.error('Error deleting user:', error);
-      
-      if (error.response?.status === 401) {
-        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
-        navigate('/login');
-      } else if (error.response?.status === 403) {
-        toast.error('No tienes permisos para eliminar usuarios.');
-      } else if (error.response?.status === 404) {
-        toast.error('Usuario no encontrado.');
-        fetchUsers(); // Recargar la lista
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Error al eliminar el usuario');
-      }
+      toast.error(error.response?.data?.message || 'Error al eliminar el usuario');
     }
-  };
-
-  const getConnectionStatusMessage = () => {
-    const statusMessages = {
-      checking: { text: '🔄 Cargando usuarios...', className: 'status-checking' },
-      connected: { text: `✅ ${users.length} usuarios cargados`, className: 'status-connected' },
-      network_error: { text: '🌐 Error de conexión', className: 'status-error' },
-      auth_error: { text: '🔐 Error de autenticación', className: 'status-error' },
-      access_denied: { text: '🚫 Acceso denegado', className: 'status-warning' },
-      error: { text: '❌ Error al cargar usuarios', className: 'status-error' },
-    };
-    
-    return statusMessages[connectionStatus] || statusMessages.error;
   };
 
   const getRoleIcon = (role) => {
     switch (role) {
       case 'SuperUser':
-        return <SupervisedUserCircle className="role-icon superuser" />;
+        return <FiShield className="role-icon superuser" />;
       case 'Admin':
-        return <AdminPanelSettings className="role-icon admin" />;
+        return <FiUsers className="role-icon admin" />;
       default:
-        return <Person className="role-icon user" />;
+        return <FiUser className="role-icon user" />;
     }
   };
 
@@ -254,159 +210,195 @@ const ManageUsers = () => {
     return (
       <div className="manage-users-container">
         <div className="loading-state">
-          <span className="loading-spinner"></span>
-          Cargando usuarios...
+          <div className="spinner"></div>
+          <p>Cargando usuarios...</p>
         </div>
       </div>
     );
   }
 
-  const statusInfo = getConnectionStatusMessage();
-
   return (
     <div className="manage-users-container">
       {/* Header */}
-      <div className="manage-users-header">
+      <motion.div 
+        className="page-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <div className="header-content">
           <button 
-            className="back-button"
+            className="back-button-small"
             onClick={() => navigate('/admin')}
           >
-            <ArrowBack />
-            Volver al Panel
+            <FiArrowLeft />
+            Volver
           </button>
           <h1 className="page-title">Gestión de Usuarios</h1>
           <p className="page-subtitle">
             Administra los usuarios registrados en J&L Clean Co.
           </p>
           
-          {/* ✅ Información del usuario actual */}
           <div className="user-info">
             <span>SuperUser: {currentUser?.name} ({currentUser?.email})</span>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Connection Status */}
-      <div className={`connection-status ${statusInfo.className}`}>
+      <motion.div 
+        className={`connection-status ${connectionStatus}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
         <span className="status-indicator"></span>
-        {statusInfo.text}
-      </div>
+        {connectionStatus === 'connected' && `✅ ${users.length} usuarios cargados`}
+        {connectionStatus === 'checking' && '🔄 Cargando usuarios...'}
+        {connectionStatus === 'network_error' && '🌐 Error de conexión'}
+        {connectionStatus === 'error' && '❌ Error al cargar usuarios'}
+      </motion.div>
 
       {(connectionStatus === 'error' || connectionStatus === 'network_error') && (
-        <button 
+        <motion.button 
           onClick={fetchUsers}
           className="retry-button"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          whileHover={{ scale: 1.05 }}
         >
-          🔄 Reintentar conexión
-        </button>
+          <FiRefreshCw /> Reintentar conexión
+        </motion.button>
       )}
 
-      {/* Users Table */}
+      {/* Users Grid */}
       {connectionStatus === 'connected' && users.length === 0 ? (
-        <div className="empty-state">
+        <motion.div 
+          className="empty-state glass-card"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
           <div className="empty-icon">
-            <Person />
+            <FiUsers />
           </div>
           <h3 className="empty-title">No hay usuarios registrados</h3>
           <p className="empty-description">
             Los usuarios aparecerán aquí una vez que se registren en la plataforma.
           </p>
-        </div>
+        </motion.div>
       ) : connectionStatus === 'connected' ? (
-        <div className="users-table-container">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th className="user-column">Usuario</th>
-                <th className="email-column">Correo Electrónico</th>
-                <th className="role-column">Rol</th>
-                <th className="status-column">Estado</th>
-                <th className="date-column">Fecha Registro</th>
-                <th className="actions-column">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(user => (
-                <tr key={user._id} className={`user-row ${user._id === currentUser._id ? 'current-user' : ''}`}>
-                  <td className="user-cell">
-                    <div className="user-info-cell">
-                      <div className="user-avatar">
-                        {user.name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div className="user-details">
-                        <div className="user-name">{user.name}</div>
-                        <div className="user-id">ID: {user._id?.substring(0, 8)}...</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="email-cell">
-                    <div className="email">{user.email}</div>
-                  </td>
-                  <td className="role-cell">
+        <div className="users-grid">
+          <AnimatePresence>
+            {users.map((user, index) => (
+              <motion.div 
+                key={user._id}
+                className={`user-card glass-card ${user._id === currentUser._id ? 'current-user' : ''}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -5 }}
+              >
+                <div className="user-header">
+                  <div className="user-avatar">
+                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div className="user-main-info">
+                    <h3 className="user-name">{user.name}</h3>
+                    <p className="user-email">{user.email}</p>
+                    <p className="user-id">ID: {user._id?.substring(0, 12)}...</p>
+                  </div>
+                </div>
+
+                <div className="user-details">
+                  <div className="detail-row">
+                    <span className="detail-label">Rol:</span>
                     <div className="role-display">
                       {getRoleIcon(user.role)}
                       <span className={getRoleBadgeClass(user.role)}>
                         {user.role}
                       </span>
-                      {user.role !== 'SuperUser' && (
-                        <button 
+                      {user.role !== 'SuperUser' && user._id !== currentUser._id && (
+                        <motion.button 
                           className="change-role-btn"
                           onClick={() => handleChangeUserRole(user._id, user.role)}
                           title={`Cambiar rol de ${user.role}`}
-                          disabled={user._id === currentUser._id}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
-                          🔄
-                        </button>
+                          <FiRefreshCw />
+                        </motion.button>
                       )}
                     </div>
-                  </td>
-                  <td className="status-cell">
+                  </div>
+
+                  <div className="detail-row">
+                    <span className="detail-label">Estado:</span>
                     <div className="status-display">
                       <span className={`status-badge ${user.isActive !== false ? 'active' : 'inactive'}`}>
-                        {user.isActive !== false ? 'Activo' : 'Inactivo'}
+                        {user.isActive !== false ? (
+                          <><FiCheckCircle /> Activo</>
+                        ) : (
+                          <><FiXCircle /> Inactivo</>
+                        )}
                       </span>
-                      <button 
-                        className="toggle-status-btn"
-                        onClick={() => handleToggleUserStatus(user._id, user.isActive !== false)}
-                        title={user.isActive !== false ? 'Desactivar usuario' : 'Activar usuario'}
-                        disabled={user._id === currentUser._id}
-                      >
-                        {user.isActive !== false ? <Block /> : <CheckCircle />}
-                      </button>
+                      {user._id !== currentUser._id && (
+                        <motion.button 
+                          className="toggle-status-btn"
+                          onClick={() => handleToggleUserStatus(user._id, user.isActive !== false)}
+                          title={user.isActive !== false ? 'Desactivar usuario' : 'Activar usuario'}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          {user.isActive !== false ? <FiXCircle /> : <FiCheckCircle />}
+                        </motion.button>
+                      )}
                     </div>
-                  </td>
-                  <td className="date-cell">
-                    <div className="registration-date">
+                  </div>
+
+                  <div className="detail-row">
+                    <span className="detail-label">Registro:</span>
+                    <span className="registration-date">
                       {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : 'N/A'}
-                    </div>
-                  </td>
-                  <td className="actions-cell">
-                    <div className="action-buttons">
-                      <button 
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditUser(user._id)}
-                        title="Editar usuario"
-                      >
-                        <Edit />
-                      </button>
-                      <button 
-                        className="action-btn delete-btn"
-                        onClick={() => handleDeleteUser(user._id)}
-                        title="Eliminar usuario"
-                        disabled={user._id === currentUser._id || user.role === 'SuperUser'}
-                      >
-                        <Delete />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="user-actions">
+                  <motion.button 
+                    className="action-btn edit-btn"
+                    onClick={() => handleEditUser(user._id)}
+                    title="Editar usuario"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <FiEdit2 />
+                  </motion.button>
+                  <motion.button 
+                    className="action-btn delete-btn"
+                    onClick={() => handleDeleteUser(user._id)}
+                    title="Eliminar usuario"
+                    disabled={user._id === currentUser._id || user.role === 'SuperUser'}
+                    whileHover={{ scale: user._id === currentUser._id || user.role === 'SuperUser' ? 1 : 1.1 }}
+                    whileTap={{ scale: user._id === currentUser._id || user.role === 'SuperUser' ? 1 : 0.9 }}
+                  >
+                    <FiTrash2 />
+                  </motion.button>
+                </div>
+
+                {user._id === currentUser._id && (
+                  <div className="current-user-badge">
+                    Tú
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       ) : (
-        <div className="error-state">
+        <motion.div 
+          className="error-state glass-card"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
           <div className="error-icon">❌</div>
           <h3 className="error-title">No se pudieron cargar los usuarios</h3>
           <p className="error-description">
@@ -417,24 +409,11 @@ const ManageUsers = () => {
           </p>
           <button 
             onClick={fetchUsers}
-            className="retry-button primary"
+            className="retry-button"
           >
-            🔄 Reintentar
+            <FiRefreshCw /> Reintentar
           </button>
-        </div>
-      )}
-
-      {/* Debug Info (solo en desarrollo) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="debug-info">
-          <details>
-            <summary>Información de Debug</summary>
-            <p><strong>Total usuarios:</strong> {users.length}</p>
-            <p><strong>Estado conexión:</strong> {connectionStatus}</p>
-            <p><strong>Usuario actual:</strong> {currentUser?.name} ({currentUser?.role})</p>
-            <p><strong>Es SuperUser:</strong> {isSuperUser ? 'Sí' : 'No'}</p>
-          </details>
-        </div>
+        </motion.div>
       )}
     </div>
   );
