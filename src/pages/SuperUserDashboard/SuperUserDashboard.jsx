@@ -1,26 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import { motion } from 'framer-motion';
 import {
-  People,
-  Inventory,
-  ShoppingCart,
-  Settings,
-  Security,
-  Assessment,
-  Backup,
-  Speed,
-  Storage,
-  NetworkCheck,
-  Add,
-  Edit,
-  Delete,
-  Visibility,
-  TrendingUp,
-  LocalShipping,
-  AdminPanelSettings
-} from '@mui/icons-material';
+  FiUsers,
+  FiPackage,
+  FiShoppingCart,
+  FiSettings,
+  FiShield,
+  FiBarChart2,
+  FiDatabase,
+  FiServer,
+  FiHardDrive,
+  FiWifi,
+  FiTrendingUp,
+  FiDollarSign,
+  FiUserCheck
+} from 'react-icons/fi';
+import { productsAPI, usersAPI, salesAPI } from '../../services/api';
 import './SuperUserDashboard.css';
 
 const SuperUserDashboard = () => {
@@ -47,41 +44,24 @@ const SuperUserDashboard = () => {
 
   const fetchSuperUserData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Intentar obtener datos de diferentes endpoints disponibles
       const requests = [
-        // Obtener productos
-        axios.get('http://localhost:5000/api/products', {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] })),
-        
-        // Obtener usuarios (si existe el endpoint)
-        axios.get('http://localhost:5000/api/users', {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] })),
-        
-        // Obtener ventas (si existe el endpoint)
-        axios.get('http://localhost:5000/api/sales', {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => ({ data: [] }))
+        productsAPI.getAll().catch(() => ({ data: { data: [] } })),
+        usersAPI.getAll().catch(() => ({ data: { data: [] } })),
+        salesAPI.getAll().catch(() => ({ data: [] }))
       ];
 
       const [productsResponse, usersResponse, salesResponse] = await Promise.all(requests);
 
-      // Calcular estadísticas basadas en los datos disponibles
-      const totalProducts = productsResponse.data?.length || 0;
-      const totalUsers = usersResponse.data?.length || 0;
+      const totalProducts = productsResponse.data?.data?.length || 0;
+      const totalUsers = usersResponse.data?.data?.length || 0;
       const totalSales = salesResponse.data?.length || 0;
       
-      // Calcular ingresos totales
       const totalRevenue = salesResponse.data?.reduce((sum, sale) => {
         return sum + (sale.total || 0);
       }, 0) || 0;
 
-      // Contar administradores (asumiendo que tienen role 'admin' o 'superuser')
-      const activeAdmins = usersResponse.data?.filter(user => 
-        user.role === 'admin' || user.role === 'superuser'
+      const activeAdmins = usersResponse.data?.data?.filter(user => 
+        user.role === 'Admin' || user.role === 'SuperUser'
       ).length || 0;
 
       setStats({
@@ -93,7 +73,6 @@ const SuperUserDashboard = () => {
         systemHealth: 'excellent'
       });
 
-      // Simular estado del sistema
       setSystemStatus({
         database: 'online',
         api: 'online',
@@ -104,24 +83,6 @@ const SuperUserDashboard = () => {
     } catch (error) {
       console.error('Error fetching superuser data:', error);
       
-      // Si hay error, usar datos por defecto
-      setStats({
-        totalUsers: 0,
-        totalProducts: 0,
-        totalSales: 0,
-        totalRevenue: 0,
-        activeAdmins: 0,
-        systemHealth: 'excellent'
-      });
-      
-      setSystemStatus({
-        database: 'online',
-        api: 'online',
-        storage: 'online',
-        network: 'online'
-      });
-      
-      // Solo mostrar error si es un error de red, no de datos faltantes
       if (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
         toast.error('Error de conexión. Verificando estado del sistema...');
       }
@@ -132,41 +93,14 @@ const SuperUserDashboard = () => {
 
   const handleAction = (action) => {
     switch (action) {
-      case 'manage-admins':
-        toast.info('Gestión de administradores - Funcionalidad en desarrollo');
-        break;
       case 'manage-users':
-        toast.info('Gestión de usuarios - Funcionalidad en desarrollo');
+        navigate('/admin/manage-users');
         break;
       case 'manage-products':
-        navigate('/products');
+        navigate('/admin/manage-products');
         break;
       case 'view-sales':
-        toast.info('Ver ventas - Funcionalidad en desarrollo');
-        break;
-      case 'system-settings':
-        toast.info('Configuración del sistema - Funcionalidad en desarrollo');
-        break;
-      case 'security':
-        toast.info('Configuración de seguridad - Funcionalidad en desarrollo');
-        break;
-      case 'backup':
-        toast.info('Backup y restauración - Funcionalidad en desarrollo');
-        break;
-      case 'reports':
-        toast.info('Generación de reportes - Funcionalidad en desarrollo');
-        break;
-      case 'inventory':
-        toast.info('Control de inventario - Funcionalidad en desarrollo');
-        break;
-      case 'categories':
-        toast.info('Gestión de categorías - Funcionalidad en desarrollo');
-        break;
-      case 'analytics':
-        toast.info('Analytics avanzado - Funcionalidad en desarrollo');
-        break;
-      case 'maintenance':
-        toast.info('Modo mantenimiento - Funcionalidad en desarrollo');
+        navigate('/admin/sales');
         break;
       default:
         toast.info('Funcionalidad en desarrollo');
@@ -189,9 +123,9 @@ const SuperUserDashboard = () => {
   if (loading) {
     return (
       <div className="superuser-container">
-        <div className="superuser-loading">
-          <span className="superuser-loading-spinner"></span>
-          Cargando panel de superusuario...
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Cargando panel de superusuario...</p>
         </div>
       </div>
     );
@@ -200,257 +134,366 @@ const SuperUserDashboard = () => {
   return (
     <div className="superuser-container">
       {/* Header */}
-      <div className="superuser-header">
-        <h1 className="superuser-title">Panel de Superusuario</h1>
-        <p className="superuser-subtitle">
-          Control total del sistema. Gestiona administradores, usuarios, productos y configuración del sistema.
-        </p>
-        <div className="role-badge">
-          Superusuario
+      <motion.div 
+        className="page-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="header-content">
+          <h1 className="page-title">Panel de Superusuario</h1>
+          <p className="page-subtitle">
+            Control total del sistema. Gestiona administradores, usuarios, productos y configuración.
+          </p>
+          <div className="role-badge superuser">
+            <FiShield /> Superusuario
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Quick Actions */}
-      <div className="quick-actions">
-        <div className="quick-action" onClick={() => handleAction('manage-admins')}>
-          <AdminPanelSettings className="quick-action-icon" />
-          <div className="quick-action-label">Admins</div>
-        </div>
-        <div className="quick-action" onClick={() => handleAction('security')}>
-          <Security className="quick-action-icon" />
+      <motion.div 
+        className="quick-actions"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        <motion.div 
+          className="quick-action glass-card"
+          onClick={() => handleAction('manage-users')}
+          whileHover={{ y: -5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <FiUsers className="quick-action-icon" />
+          <div className="quick-action-label">Usuarios</div>
+        </motion.div>
+        <motion.div 
+          className="quick-action glass-card"
+          onClick={() => toast.info('Funcionalidad en desarrollo')}
+          whileHover={{ y: -5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <FiShield className="quick-action-icon" />
           <div className="quick-action-label">Seguridad</div>
-        </div>
-        <div className="quick-action" onClick={() => handleAction('backup')}>
-          <Backup className="quick-action-icon" />
+        </motion.div>
+        <motion.div 
+          className="quick-action glass-card"
+          onClick={() => toast.info('Funcionalidad en desarrollo')}
+          whileHover={{ y: -5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <FiDatabase className="quick-action-icon" />
           <div className="quick-action-label">Backup</div>
-        </div>
-        <div className="quick-action" onClick={() => handleAction('reports')}>
-          <Assessment className="quick-action-icon" />
+        </motion.div>
+        <motion.div 
+          className="quick-action glass-card"
+          onClick={() => toast.info('Funcionalidad en desarrollo')}
+          whileHover={{ y: -5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <FiBarChart2 className="quick-action-icon" />
           <div className="quick-action-label">Reportes</div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Stats Overview */}
-      <div className="stats-overview">
-        <div className="stat-overview-card" onClick={() => navigate('/admin/manage-users')}>
-          <div className="stat-overview-icon">👥</div>
-          <div className="stat-overview-number">{stats.totalUsers}</div>
-          <div className="stat-overview-label">Usuarios Totales</div>
-        </div>
-        
-        <div className="stat-overview-card" onClick={() => handleAction('manage-products')}>
-          <div className="stat-overview-icon">📦</div>
-          <div className="stat-overview-number">{stats.totalProducts}</div>
-          <div className="stat-overview-label">Productos</div>
-        </div>
-        
-        <div className="stat-overview-card" onClick={() => handleAction('view-sales')}>
-          <div className="stat-overview-icon">💰</div>
-          <div className="stat-overview-number">{stats.totalSales}</div>
-          <div className="stat-overview-label">Ventas</div>
-        </div>
-        
-        <div className="stat-overview-card" onClick={() => handleAction('reports')}>
-          <div className="stat-overview-icon">📊</div>
-          <div className="stat-overview-number">${stats.totalRevenue.toFixed(2)}</div>
-          <div className="stat-overview-label">Ingresos</div>
-        </div>
-        
-        <div className="stat-overview-card" onClick={() => handleAction('manage-admins')}>
-          <div className="stat-overview-icon">👨‍💼</div>
-          <div className="stat-overview-number">{stats.activeAdmins}</div>
-          <div className="stat-overview-label">Administradores</div>
-        </div>
-        
-        <div className="stat-overview-card" onClick={() => handleAction('system-settings')}>
-          <div className="stat-overview-icon">⚙️</div>
-          <div className="stat-overview-number">{stats.systemHealth}</div>
-          <div className="stat-overview-label">Salud del Sistema</div>
-        </div>
+      <div className="stats-grid">
+        <motion.div 
+          className="stat-card glass-card"
+          onClick={() => navigate('/admin/manage-users')}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          whileHover={{ y: -5 }}
+        >
+          <div className="stat-icon users">
+            <FiUsers />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">{stats.totalUsers}</div>
+            <div className="stat-label">Usuarios Totales</div>
+          </div>
+          <div className="stat-trend positive">
+            <FiTrendingUp /> +12%
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="stat-card glass-card"
+          onClick={() => handleAction('manage-products')}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          whileHover={{ y: -5 }}
+        >
+          <div className="stat-icon products">
+            <FiPackage />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">{stats.totalProducts}</div>
+            <div className="stat-label">Productos</div>
+          </div>
+          <div className="stat-trend positive">
+            <FiTrendingUp /> +8%
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="stat-card glass-card"
+          onClick={() => handleAction('view-sales')}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          whileHover={{ y: -5 }}
+        >
+          <div className="stat-icon sales">
+            <FiShoppingCart />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">{stats.totalSales}</div>
+            <div className="stat-label">Ventas</div>
+          </div>
+          <div className="stat-trend positive">
+            <FiTrendingUp /> +15%
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="stat-card glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          whileHover={{ y: -5 }}
+        >
+          <div className="stat-icon revenue">
+            <FiDollarSign />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">${stats.totalRevenue.toFixed(0)}</div>
+            <div className="stat-label">Ingresos</div>
+          </div>
+          <div className="stat-trend positive">
+            <FiTrendingUp /> +20%
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="stat-card glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          whileHover={{ y: -5 }}
+        >
+          <div className="stat-icon admins">
+            <FiUserCheck />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">{stats.activeAdmins}</div>
+            <div className="stat-label">Administradores</div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="stat-card glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          whileHover={{ y: -5 }}
+        >
+          <div className="stat-icon health">
+            <FiServer />
+          </div>
+          <div className="stat-content">
+            <div className="stat-number">Excelente</div>
+            <div className="stat-label">Salud del Sistema</div>
+          </div>
+        </motion.div>
       </div>
 
       {/* Management Sections */}
-      <div className="management-sections">
-        {/* User Management */}
-        <div className="management-section">
-          <div className="section-header">
-            <div className="section-icon users">
-              <People />
+      <div className="management-grid">
+        <motion.div 
+          className="management-card glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="management-header">
+            <div className="management-icon users">
+              <FiUsers />
             </div>
             <div>
-              <h3 className="section-title">Gestión de Usuarios</h3>
-              <p className="section-description">
-                Administra usuarios, roles y permisos del sistema
+              <h3 className="management-title">Gestión de Usuarios</h3>
+              <p className="management-description">
+                Administra usuarios, roles y permisos
               </p>
             </div>
           </div>
-          <div className="section-actions">
-            <button 
-              className="section-action-button primary"
-              onClick={() => handleAction('manage-users')}
+          <div className="management-actions">
+            <motion.button 
+              className="management-btn primary"
+              onClick={() => navigate('/admin/manage-users')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Ver Todos los Usuarios</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('manage-admins')}
+              Ver Todos los Usuarios →
+            </motion.button>
+            <motion.button 
+              className="management-btn"
+              onClick={() => toast.info('Funcionalidad en desarrollo')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Gestionar Administradores</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('security')}
-            >
-              <span>Configurar Seguridad</span>
-              <span className="action-arrow">→</span>
-            </button>
+              Gestionar Administradores →
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Product Management */}
-        <div className="management-section">
-          <div className="section-header">
-            <div className="section-icon products">
-              <Inventory />
+        <motion.div 
+          className="management-card glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+        >
+          <div className="management-header">
+            <div className="management-icon products">
+              <FiPackage />
             </div>
             <div>
-              <h3 className="section-title">Gestión de Productos</h3>
-              <p className="section-description">
-                Controla el inventario y catálogo de productos
+              <h3 className="management-title">Gestión de Productos</h3>
+              <p className="management-description">
+                Controla el inventario y catálogo
               </p>
             </div>
           </div>
-          <div className="section-actions">
-            <button 
-              className="section-action-button success"
-              onClick={() => handleAction('manage-products')}
+          <div className="management-actions">
+            <motion.button 
+              className="management-btn success"
+              onClick={() => navigate('/admin/manage-products')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Gestionar Productos</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('inventory')}
+              Gestionar Productos →
+            </motion.button>
+            <motion.button 
+              className="management-btn"
+              onClick={() => toast.info('Funcionalidad en desarrollo')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Control de Inventario</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('categories')}
-            >
-              <span>Gestionar Categorías</span>
-              <span className="action-arrow">→</span>
-            </button>
+              Control de Inventario →
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Sales & Analytics */}
-        <div className="management-section">
-          <div className="section-header">
-            <div className="section-icon sales">
-              <ShoppingCart />
+        <motion.div 
+          className="management-card glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <div className="management-header">
+            <div className="management-icon sales">
+              <FiShoppingCart />
             </div>
             <div>
-              <h3 className="section-title">Ventas y Analytics</h3>
-              <p className="section-description">
-                Monitorea ventas, reportes y métricas del negocio
+              <h3 className="management-title">Ventas y Analytics</h3>
+              <p className="management-description">
+                Monitorea ventas y métricas
               </p>
             </div>
           </div>
-          <div className="section-actions">
-            <button 
-              className="section-action-button warning"
-              onClick={() => handleAction('view-sales')}
+          <div className="management-actions">
+            <motion.button 
+              className="management-btn warning"
+              onClick={() => navigate('/admin/sales')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Ver Ventas</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('reports')}
+              Ver Ventas →
+            </motion.button>
+            <motion.button 
+              className="management-btn"
+              onClick={() => toast.info('Funcionalidad en desarrollo')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Generar Reportes</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('analytics')}
-            >
-              <span>Analytics Avanzado</span>
-              <span className="action-arrow">→</span>
-            </button>
+              Generar Reportes →
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* System Management */}
-        <div className="management-section">
-          <div className="section-header">
-            <div className="section-icon system">
-              <Settings />
+        <motion.div 
+          className="management-card glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65 }}
+        >
+          <div className="management-header">
+            <div className="management-icon system">
+              <FiSettings />
             </div>
             <div>
-              <h3 className="section-title">Configuración del Sistema</h3>
-              <p className="section-description">
-                Configuración avanzada y mantenimiento del sistema
+              <h3 className="management-title">Configuración del Sistema</h3>
+              <p className="management-description">
+                Configuración avanzada y mantenimiento
               </p>
             </div>
           </div>
-          <div className="section-actions">
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('system-settings')}
+          <div className="management-actions">
+            <motion.button 
+              className="management-btn"
+              onClick={() => toast.info('Funcionalidad en desarrollo')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Configuración General</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button"
-              onClick={() => handleAction('backup')}
+              Configuración General →
+            </motion.button>
+            <motion.button 
+              className="management-btn danger"
+              onClick={() => toast.info('Funcionalidad en desarrollo')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span>Backup y Restauración</span>
-              <span className="action-arrow">→</span>
-            </button>
-            <button 
-              className="section-action-button danger"
-              onClick={() => handleAction('maintenance')}
-            >
-              <span>Modo Mantenimiento</span>
-              <span className="action-arrow">→</span>
-            </button>
+              Modo Mantenimiento →
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* System Status */}
-      <div className="system-status">
+      <motion.div 
+        className="system-status glass-card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+      >
         <div className="system-status-header">
-          <div className="system-status-icon">
-            <Speed />
-          </div>
+          <FiServer className="system-status-icon" />
           <h3 className="system-status-title">Estado del Sistema</h3>
         </div>
         <div className="status-grid">
           <div className="status-item">
             <div className={`status-indicator ${getStatusColor(systemStatus.database)}`}></div>
+            <FiDatabase className="status-icon" />
             <div className="status-text">Base de Datos</div>
           </div>
           <div className="status-item">
             <div className={`status-indicator ${getStatusColor(systemStatus.api)}`}></div>
+            <FiServer className="status-icon" />
             <div className="status-text">API</div>
           </div>
           <div className="status-item">
             <div className={`status-indicator ${getStatusColor(systemStatus.storage)}`}></div>
+            <FiHardDrive className="status-icon" />
             <div className="status-text">Almacenamiento</div>
           </div>
           <div className="status-item">
             <div className={`status-indicator ${getStatusColor(systemStatus.network)}`}></div>
+            <FiWifi className="status-icon" />
             <div className="status-text">Red</div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
