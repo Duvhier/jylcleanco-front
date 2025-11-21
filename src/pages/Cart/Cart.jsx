@@ -70,7 +70,7 @@ const Cart = () => {
     setCart({ ...cart, items: updatedItems, total: newTotal });
 
     try {
-      await cartAPI.update(productId, newQuantity);
+      await cartAPI.update(productId, { quantity: newQuantity });
       await fetchCart(); // Sync with server to be sure
     } catch (error) {
       setCart(oldCart); // Revert on error
