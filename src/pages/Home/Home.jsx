@@ -1,10 +1,26 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import WelcomeMessage from '../../components/WelcomeMessage';
+import { motion } from 'framer-motion';
+import WelcomeMessage from '../../components/WelcomeMessage/WelcomeMessage';
 import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
+
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
 
   return (
     <div className="home-container">
@@ -12,21 +28,47 @@ const Home = () => {
       <WelcomeMessage />
       
       {/* Hero Section */}
-      <section className="hero-section glass-card">
+      <motion.section 
+        className="hero-section glass-card"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeInUp}
+      >
         <div className="hero-content">
-          <h1 className="hero-title">J&L Clean Co.</h1>
-          <p className="hero-subtitle">
+          <motion.h1 className="hero-title" variants={fadeInUp}>
+            J&L Clean Co.
+          </motion.h1>
+          <motion.p className="hero-subtitle" variants={fadeInUp}>
             Productos de limpieza profesionales para el cuidado de tu hogar. 
             Calidad, eficiencia y frescura en cada producto.
-          </p>
+          </motion.p>
+          <motion.button 
+            className="cta-button primary"
+            variants={fadeInUp}
+            onClick={() => navigate('/products')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Ver Catálogo
+          </motion.button>
         </div>
-        <div className="hero-image">
+        <motion.div 
+          className="hero-image"
+          variants={fadeInUp}
+        >
           <img src="/images/jylclean.png" alt="J&L Clean Co. Logo" />
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
       {/* About Section */}
-      <section className="content-section glass-card">
+      <motion.section 
+        className="content-section glass-card"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeInUp}
+      >
         <div className="content-text">
           <h2 className="content-title">Nuestra Empresa</h2>
           <p className="content-subtitle">
@@ -37,10 +79,16 @@ const Home = () => {
         <div className="content-image">
           <img src="/images/jabones.jpg" alt="Productos de Limpieza" />
         </div>
-      </section>
+      </motion.section>
 
       {/* Services Section */}
-      <section className="content-section glass-card reverse">
+      <motion.section 
+        className="content-section glass-card reverse"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeInUp}
+      >
         <div className="content-text">
           <h2 className="content-title">Limpieza Profesional</h2>
           <p className="content-subtitle">
@@ -51,60 +99,69 @@ const Home = () => {
         <div className="content-image">
           <img src="/images/online.png" alt="Tienda Online" />
         </div>
-      </section>
+      </motion.section>
 
       {/* Products Section */}
-      <section className="products-section glass-card">
-        <h2 className="products-title">Nuestros Productos Destacados</h2>
-        <p className="products-subtitle">
+      <motion.section 
+        className="products-section glass-card"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={staggerContainer}
+      >
+        <motion.h2 className="products-title" variants={fadeInUp}>
+          Nuestros Productos Destacados
+        </motion.h2>
+        <motion.p className="products-subtitle" variants={fadeInUp}>
           Descubre nuestra selección de productos más populares, diseñados para satisfacer 
           todas tus necesidades de limpieza y cuidado del hogar.
-        </p>
+        </motion.p>
         
         <div className="products-grid">
-          <div className="product-card" onClick={() => navigate('/products')}>
-            <img src="/images/aceites.jpg" alt="Aceites Esenciales" className="product-image" />
-            <div className="product-info">
-              <h3 className="product-name">Aceites Esenciales</h3>
-              <p className="product-description">
-                Productos naturales para el cuidado personal y aromaterapia
-              </p>
-            </div>
-          </div>
-          
-          <div className="product-card" onClick={() => navigate('/products')}>
-            <img src="/images/cremas.jpg" alt="Cremas Hidratantes" className="product-image" />
-            <div className="product-info">
-              <h3 className="product-name">Cremas Hidratantes</h3>
-              <p className="product-description">
-                Hidratación profunda y cuidado especializado para tu piel
-              </p>
-            </div>
-          </div>
-          
-          <div className="product-card" onClick={() => navigate('/products')}>
-            <img src="/images/ambientador.jpg" alt="Ambientadores" className="product-image" />
-            <div className="product-info">
-              <h3 className="product-name">Ambientadores</h3>
-              <p className="product-description">
-                Fragancias frescas y duraderas para crear ambientes agradables
-              </p>
-            </div>
-          </div>
+          {[
+            { img: "/images/aceites.jpg", title: "Aceites Esenciales", desc: "Productos naturales para el cuidado personal y aromaterapia" },
+            { img: "/images/cremas.jpg", title: "Cremas Hidratantes", desc: "Hidratación profunda y cuidado especializado para tu piel" },
+            { img: "/images/ambientador.jpg", title: "Ambientadores", desc: "Fragancias frescas y duraderas para crear ambientes agradables" }
+          ].map((product, index) => (
+            <motion.div 
+              key={index}
+              className="product-card"
+              variants={fadeInUp}
+              onClick={() => navigate('/products')}
+              whileHover={{ y: -10 }}
+            >
+              <img src={product.img} alt={product.title} className="product-image" />
+              <div className="product-info">
+                <h3 className="product-name">{product.title}</h3>
+                <p className="product-description">{product.desc}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* CTA Section */}
-      <section className="cta-section glass-card">
+      <motion.section 
+        className="cta-section glass-card"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeInUp}
+      >
         <h2 className="cta-title">¿Listo para descubrir más?</h2>
         <p className="cta-subtitle">
           Explora nuestro catálogo completo de productos y encuentra todo lo que necesitas 
           para mantener tu hogar limpio, fresco y acogedor.
         </p>
-        <button className="cta-button" onClick={() => navigate('/products')}>
+        <motion.button 
+          className="cta-button" 
+          onClick={() => navigate('/products')}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           Ver Todos los Productos
-        </button>
-      </section>
+        </motion.button>
+      </motion.section>
     </div>
   );
 };

@@ -1,8 +1,11 @@
+// src/pages/Login/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Paper, TextField, Typography, Box } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress } from '@mui/material';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
+import { FiMail, FiLock, FiAlertCircle } from 'react-icons/fi';
 import './Login.css';
 
 const Login = () => {
@@ -17,7 +20,7 @@ const Login = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(''); // Clear error when user types
+    setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -49,7 +52,8 @@ const Login = () => {
 
     setLoadingForgot(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/forgot-password', { 
+      const API_URL = import.meta.env.VITE_API_URL || 'https://jylclean-backend.vercel.app';
+      const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { 
         email: forgotEmail 
       });
       
@@ -68,77 +72,109 @@ const Login = () => {
   };
 
   return (
-    <Container maxWidth="sm" className="login-container">
-      <Paper elevation={0} className="login-card">
-        <Typography variant="h4" component="h1" gutterBottom align="center" className="login-title">
-          Iniciar Sesión
-        </Typography>
+    <div className="login-container">
+      <motion.div 
+        className="login-card glass-card"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <div className="login-header">
+          <motion.h1 
+            className="login-title"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            Bienvenido
+          </motion.h1>
+          <motion.p 
+            className="login-subtitle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            Inicia sesión para continuar
+          </motion.p>
+        </div>
 
         {error && (
-          <div className="message error">
+          <motion.div 
+            className="message error"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+          >
+            <FiAlertCircle />
             {error}
-          </div>
+          </motion.div>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleSubmit} className="login-form">
           <div className="form-field">
             <label className="form-label">Correo Electrónico</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="tu@email.com"
-              required
-              disabled={loading}
-            />
+            <div className="input-wrapper">
+              <FiMail className="input-icon" />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="    tu@email.com"
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
 
           <div className="form-field">
             <label className="form-label">Contraseña</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="Tu contraseña"
-              required
-              disabled={loading}
-            />
+            <div className="input-wrapper">
+              <FiLock className="input-icon" />
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="    ••••••••"
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
 
-          <button 
+          <motion.button 
             type="submit" 
-            className={`login-button ${loading ? 'loading' : ''}`}
+            className="login-button"
             disabled={loading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            {loading && <span className="loading-spinner"></span>}
-            {loading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
-          </button>
+            {loading ? <CircularProgress size={20} color="inherit" /> : 'Iniciar Sesión'}
+          </motion.button>
 
           <div className="login-links">
-            <Button 
-              variant="text" 
+            <button 
+              type="button"
               onClick={() => navigate('/register')} 
               className="link-button"
               disabled={loading}
             >
               ¿No tienes cuenta? Regístrate
-            </Button>
+            </button>
             
-            <Button 
-              variant="text" 
+            <button 
+              type="button"
               onClick={() => setOpenForgot(true)} 
-              className="link-button bold"
+              className="link-button highlight"
               disabled={loading}
             >
               ¿Olvidaste tu contraseña?
-            </Button>
+            </button>
           </div>
-        </Box>
-      </Paper>
+        </form>
+      </motion.div>
 
       <Dialog 
         open={openForgot} 
@@ -149,17 +185,22 @@ const Login = () => {
       >
         <DialogTitle className="dialog-title">Recuperar contraseña</DialogTitle>
         <DialogContent>
+          <p className="dialog-text">
+            Ingresa tu correo electrónico y te enviaremos las instrucciones para restablecer tu contraseña.
+          </p>
           <div className="form-field">
-            <label className="form-label">Correo electrónico</label>
-            <input
-              type="email"
-              value={forgotEmail}
-              onChange={e => setForgotEmail(e.target.value)}
-              className="form-input"
-              placeholder="tu@email.com"
-              autoFocus
-              disabled={loadingForgot}
-            />
+            <div className="input-wrapper">
+              <FiMail className="input-icon" />
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={e => setForgotEmail(e.target.value)}
+                className="form-input"
+                placeholder="    tu@email.com"
+                autoFocus
+                disabled={loadingForgot}
+              />
+            </div>
           </div>
         </DialogContent>
         <DialogActions>
@@ -179,7 +220,7 @@ const Login = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </div>
   );
 };
 

@@ -1,172 +1,136 @@
-/* WelcomeMessage.css - Opción 3: Elegante y Sofisticado */
+/* WelcomeMessage.css */
 
-.welcome-message {
+.welcome-card {
   display: flex;
   align-items: center;
   gap: 2rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 2rem 2.5rem;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 2rem 3rem;
   margin-bottom: 3rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  animation: slideInFromTop 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.02),
+    0 10px 15px -3px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.welcome-message:hover {
+.welcome-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  border-color: #d1d5db;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  background: rgba(255, 255, 255, 0.8);
 }
 
-@keyframes slideInFromTop {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Efecto de brillo decorativo */
+.welcome-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.8) 50%,
+      transparent 100%);
 }
 
-.welcome-avatar {
+.welcome-avatar-container {
   flex-shrink: 0;
 }
 
-.avatar-circle {
-  width: 75px;
-  height: 75px;
+.avatar-ring {
+  padding: 4px;
+  background: linear-gradient(135deg, #e2e8f0 0%, #ffffff 100%);
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981 0%, #f59e0b 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.avatar-placeholder,
+.avatar-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.welcome-message:hover .avatar-circle {
-  transform: scale(1.05);
-  box-shadow: 0 8px 28px rgba(16, 185, 129, 0.35);
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.avatar-initials {
-  color: white;
-  font-size: 26px;
+  font-size: 2rem;
   font-weight: 600;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  letter-spacing: 1px;
+  color: white;
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  object-fit: cover;
 }
 
-.welcome-content {
+.welcome-text-content {
   flex: 1;
 }
 
-.welcome-title {
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+.greeting-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.greeting-icon {
+  font-size: 1.5rem;
+  color: #f59e0b;
+  /* Amber for sun */
+}
+
+.greeting-title {
+  margin: 0;
+  font-size: 1.75rem;
   font-weight: 600;
-  color: #0f172a;
-  line-height: 1.2;
+  color: #64748b;
   letter-spacing: -0.5px;
 }
 
-.welcome-title-highlight {
-  background: linear-gradient(135deg, #10b981 0%, #f59e0b 100%);
+.user-name {
+  color: #0f172a;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 700;
 }
 
 .welcome-subtitle {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   color: #64748b;
   font-weight: 400;
-  line-height: 1.6;
 }
 
-/* Variante para usuarios no autenticados */
-.welcome-message.guest {
-  background: linear-gradient(135deg, #ecfdf5 0%, #fefce8 100%);
-  border-color: transparent;
-}
-
-.welcome-message.guest .avatar-circle {
-  background: #0f172a;
-}
-
-/* Responsive design */
-@media (max-width: 968px) {
-  .welcome-message {
-    gap: 1.5rem;
-    padding: 1.75rem 2rem;
-  }
-  
-  .welcome-title {
-    font-size: 1.75rem;
-  }
-  
-  .avatar-circle {
-    width: 65px;
-    height: 65px;
-  }
-  
-  .avatar-initials {
-    font-size: 22px;
-  }
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-  .welcome-message {
+  .welcome-card {
     flex-direction: column;
     text-align: center;
-    gap: 1.25rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    padding: 2rem;
+    gap: 1.5rem;
   }
-  
-  .welcome-title {
-    font-size: 1.6rem;
-  }
-  
-  .welcome-subtitle {
-    font-size: 1rem;
-  }
-}
 
-@media (max-width: 480px) {
-  .welcome-message {
-    padding: 1.25rem;
-    margin-bottom: 1.5rem;
+  .greeting-wrapper {
+    justify-content: center;
+    flex-wrap: wrap;
   }
-  
-  .welcome-title {
-    font-size: 1.4rem;
+
+  .greeting-title {
+    font-size: 1.5rem;
   }
-  
-  .welcome-subtitle {
-    font-size: 0.95rem;
-  }
-  
-  .avatar-circle {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .avatar-initials {
-    font-size: 20px;
+
+  .avatar-placeholder,
+  .avatar-img {
+    width: 70px;
+    height: 70px;
+    font-size: 1.75rem;
   }
 }

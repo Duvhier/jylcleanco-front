@@ -1,15 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { motion } from 'framer-motion';
+import { FiSun, FiMoon, FiSunrise } from 'react-icons/fi';
 import './WelcomeMessage.css';
 
 const WelcomeMessage = () => {
   const { user, isAuthenticated } = useAuth();
+  const [greeting, setGreeting] = useState('');
+  const [icon, setIcon] = useState(null);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      setGreeting('Buenos días');
+      setIcon(<FiSunrise className="greeting-icon" />);
+    } else if (hour >= 12 && hour < 18) {
+      setGreeting('Buenas tardes');
+      setIcon(<FiSun className="greeting-icon" />);
+    } else {
+      setGreeting('Buenas noches');
+      setIcon(<FiMoon className="greeting-icon" />);
+    }
+  }, []);
 
   if (!isAuthenticated || !user) {
     return null;
   }
 
-  // Función para obtener las iniciales del usuario
   const getInitials = (name) => {
     if (!name) return 'U';
     return name
@@ -20,31 +37,41 @@ const WelcomeMessage = () => {
       .slice(0, 2);
   };
 
-  // Función para obtener el nombre de usuario (username o email)
   const getUserDisplayName = () => {
     return user.username || user.email?.split('@')[0] || 'Usuario';
   };
 
   return (
-    <div className="welcome-message">
-      <div className="welcome-avatar">
-        <div className="avatar-circle">
+    <motion.div 
+      className="welcome-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
+      <div className="welcome-avatar-container">
+        <div className="avatar-ring">
           {user.avatar ? (
-            <img src={user.avatar} alt="Avatar" className="avatar-image" />
+            <img src={user.avatar} alt="Avatar" className="avatar-img" />
           ) : (
-            <span className="avatar-initials">{getInitials(user.username || user.email)}</span>
+            <div className="avatar-placeholder">
+              {getInitials(user.username || user.email)}
+            </div>
           )}
         </div>
       </div>
-      <div className="welcome-content">
-        <h2 className="welcome-title">
-          ¡Bienvenido, {getUserDisplayName()}!
-        </h2>
+      
+      <div className="welcome-text-content">
+        <div className="greeting-wrapper">
+          {icon}
+          <h2 className="greeting-title">
+            {greeting}, <span className="user-name">{getUserDisplayName()}</span>
+          </h2>
+        </div>
         <p className="welcome-subtitle">
-          Es un placer tenerte de vuelta en J&L Clean Co.
+          Nos alegra verte de nuevo en J&L Clean Co.
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

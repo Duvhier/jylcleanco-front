@@ -2,37 +2,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import {
-  Container,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Button,
-  Box,
-  Divider,
-  Avatar,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import { cartAPI, salesAPI } from '../../services/api'; // ✅ Importar APIs específicas
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  FiTrash2, 
+  FiMinus, 
+  FiPlus, 
+  FiShoppingBag, 
+  FiArrowRight,
+  FiAlertCircle
+} from 'react-icons/fi';
+import { cartAPI, salesAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import './Cart.css';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-  const [cart, setCart] = useState({ items: [], total: 0 }); // ✅ Estructura corregida
+  const { isAuthenticated } = useAuth();
+  const [cart, setCart] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
-  const [openConfirm, setOpenConfirm] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -44,28 +33,15 @@ const Cart = () => {
 
   const fetchCart = async () => {
     try {
-      const response = await cartAPI.get(); // ✅ Usar cartAPI
-      
+      const response = await cartAPI.get();
       if (response.data.success) {
         setCart(response.data.data || { items: [], total: 0 });
       } else {
         setCart({ items: [], total: 0 });
-        console.warn('Respuesta del carrito no exitosa:', response.data);
       }
     } catch (error) {
-      console.error('Error cargando carrito:', error);
-      
-      if (error.response?.status === 401) {
-        toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.reload();
-      } else if (error.response?.status === 404) {
-        // Carrito no encontrado, crear uno vacío
-        setCart({ items: [], total: 0 });
-        console.log('Carrito no encontrado, inicializando vacío');
-      } else {
-        toast.error('Error al cargar el carrito');
+      console.error('Error loading cart:', error);
+      if (error.response?.status === 404) {
         setCart({ items: [], total: 0 });
       }
     } finally {
@@ -76,294 +52,287 @@ const Cart = () => {
   const handleUpdateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) return;
 
-    try {
-      await cartAPI.update(productId, newQuantity); // ✅ Usar cartAPI
-      await fetchCart(); // Recargar carrito después de actualizar
-      toast.success('Cantidad actualizada');
-    } catch (error) {
-      console.error('Error actualizando cantidad:', error);
-      
-      if (error.response?.data?.message) {
-        toast.error(`❌ ${error.response.data.message}`);
-      } else if (error.response?.status === 400) {
-        toast.error('Stock insuficiente');
-      } else {
-        toast.error('Error al actualizar la cantidad');
+    // Optimistic update
+    const oldCart = { ...cart };
+    const updatedItems = cart.items.map(item => {
+      if ((item.productId?._id || item.productId) === productId) {
+        return { ...item, quantity: newQuantity };
       }
+      return item;
+    });
+    
+    // Recalculate total roughly
+    const newTotal = updatedItems.reduce((sum, item) => {
+      const price = item.price || item.productId?.price || 0;
+      return sum + (price * item.quantity);
+    }, 0);
+
+    setCart({ ...cart, items: updatedItems, total: newTotal });
+
+    try {
+      await cartAPI.update(productId, newQuantity);
+      await fetchCart(); // Sync with server to be sure
+    } catch (error) {
+      setCart(oldCart); // Revert on error
+      toast.error(error.response?.data?.message || 'Error al actualizar cantidad');
     }
   };
 
   const handleRemoveItem = async (productId) => {
     try {
-      await cartAPI.remove(productId); // ✅ Usar cartAPI
-      await fetchCart(); // Recargar carrito después de eliminar
-      toast.success('Producto eliminado del carrito');
+      await cartAPI.remove(productId);
+      const newItems = cart.items.filter(item => (item.productId?._id || item.productId) !== productId);
+      
+      // Recalculate total roughly
+      const newTotal = newItems.reduce((sum, item) => {
+        const price = item.price || item.productId?.price || 0;
+        return sum + (price * item.quantity);
+      }, 0);
+
+      setCart({ ...cart, items: newItems, total: newTotal });
+      toast.success('Producto eliminado');
+      await fetchCart(); // Sync
     } catch (error) {
-      console.error('Error eliminando producto:', error);
-      toast.error('Error al eliminar el producto');
+      toast.error('Error al eliminar producto');
     }
   };
 
   const handleClearCart = async () => {
     try {
-      await cartAPI.clear(); // ✅ Usar cartAPI
+      await cartAPI.clear();
       setCart({ items: [], total: 0 });
-      setOpenConfirm(false);
+      setShowClearConfirm(false);
       toast.success('Carrito vaciado');
     } catch (error) {
-      console.error('Error vaciando carrito:', error);
       toast.error('Error al vaciar el carrito');
     }
   };
 
   const handleCheckout = async () => {
-    if (!cart.items || cart.items.length === 0) {
-      toast.error('El carrito está vacío');
-      return;
-    }
+    if (!cart.items?.length) return;
 
-    // Verificar stock antes de proceder
-    const outOfStockItems = cart.items.filter(item => 
-      item.quantity > (item.product?.stock || 0)
-    );
-
-    if (outOfStockItems.length > 0) {
+    // Check stock
+    const outOfStock = cart.items.filter(item => item.quantity > (item.product?.stock || 0));
+    if (outOfStock.length > 0) {
       toast.error('Algunos productos no tienen suficiente stock');
       return;
     }
 
+    setIsCheckingOut(true);
     try {
-      // Crear la venta usando el endpoint de sales
-      await salesAPI.create({}); // El backend ya toma los items del carrito
-      
-      // El backend automáticamente vacía el carrito después de crear la venta
+      await salesAPI.create({});
       setCart({ items: [], total: 0 });
-      toast.success('✅ Compra realizada con éxito');
+      toast.success('¡Compra realizada con éxito!');
       navigate('/');
     } catch (error) {
-      console.error('Error en checkout:', error);
-      
-      if (error.response?.data?.message) {
-        toast.error(`❌ ${error.response.data.message}`);
-      } else if (error.response?.status === 400) {
-        toast.error('Stock insuficiente para algunos productos');
-      } else {
-        toast.error('Error al realizar la compra');
-      }
+      toast.error(error.response?.data?.message || 'Error al procesar la compra');
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
   if (loading) {
     return (
-      <Container maxWidth="md" className="cart-container">
+      <div className="cart-container">
         <div className="cart-loading">
-          <span className="cart-loading-spinner"></span>
-          Cargando carrito...
+          <div className="spinner"></div>
+          <p>Cargando tu carrito...</p>
         </div>
-      </Container>
+      </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <Container maxWidth="md" className="cart-container">
-        <Paper className="cart-paper" elevation={0}>
-          <Typography variant="h4" className="cart-title">
-            Carrito de Compras
-          </Typography>
-          <div className="cart-empty">
-            <Typography variant="h6" color="textSecondary" gutterBottom>
-              Debes iniciar sesión para ver tu carrito
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary"
-              onClick={() => navigate('/login')}
-            >
-              Iniciar Sesión
-            </Button>
-          </div>
-        </Paper>
-      </Container>
+      <div className="cart-container">
+        <motion.div 
+          className="cart-empty-state glass-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <FiShoppingBag className="empty-icon" />
+          <h2>Inicia sesión para ver tu carrito</h2>
+          <p>Guarda tus productos favoritos y agiliza tu compra.</p>
+          <button onClick={() => navigate('/login')} className="primary-btn">
+            Iniciar Sesión
+          </button>
+        </motion.div>
+      </div>
     );
   }
 
-  const total = cart.total || cart.items?.reduce(
-    (sum, item) => sum + (item.price * item.quantity),
-    0
-  ) || 0;
+  if (!cart.items?.length) {
+    return (
+      <div className="cart-container">
+        <motion.div 
+          className="cart-empty-state glass-card"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="empty-icon-wrapper">
+            <FiShoppingBag />
+          </div>
+          <h2>Tu carrito está vacío</h2>
+          <p>¡Explora nuestros productos y encuentra algo que te encante!</p>
+          <button onClick={() => navigate('/products')} className="primary-btn">
+            Ver Productos
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <Container maxWidth="md" className="cart-container">
-      <Paper className="cart-paper" elevation={0}>
-        <Typography variant="h4" className="cart-title">
-          Carrito de Compras
-        </Typography>
+    <div className="cart-container">
+      <motion.h1 
+        className="page-title"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        Tu Carrito de Compras
+      </motion.h1>
 
-        {!cart.items || cart.items.length === 0 ? (
-          <div className="cart-empty">
-            <Typography variant="h6" color="textSecondary" gutterBottom>
-              Tu carrito está vacío
-            </Typography>
-            <Typography variant="body1" color="textSecondary" paragraph>
-              ¡Explora nuestros productos y agrega algunos items!
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary"
+      <div className="cart-layout">
+        <div className="cart-items-section">
+          <AnimatePresence>
+            {cart.items.map((item) => (
+              <motion.div 
+                key={item.productId?._id || item._id}
+                className="cart-item glass-card"
+                layout
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                whileHover={{ scale: 1.01 }}
+              >
+                <div className="item-image">
+                  <img 
+                    src={item.image || item.productId?.image || '/placeholder.png'} 
+                    alt={item.name || item.productId?.name}
+                    onError={(e) => e.target.src = '/images/placeholder-product.jpg'}
+                  />
+                </div>
+                
+                <div className="item-details">
+                  <h3>{item.name || item.productId?.name}</h3>
+                  <p className="item-price">${(item.price || item.productId?.price)?.toFixed(2)}</p>
+                  {item.productId?.stock < item.quantity && (
+                    <span className="stock-warning">
+                      <FiAlertCircle /> Stock insuficiente
+                    </span>
+                  )}
+                </div>
+
+                <div className="item-actions">
+                  <div className="quantity-controls">
+                    <button 
+                      onClick={() => handleUpdateQuantity(item.productId?._id || item.productId, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                    >
+                      <FiMinus />
+                    </button>
+                    <span>{item.quantity}</span>
+                    <button 
+                      onClick={() => handleUpdateQuantity(item.productId?._id || item.productId, item.quantity + 1)}
+                    >
+                      <FiPlus />
+                    </button>
+                  </div>
+                  <div className="item-subtotal">
+                    ${((item.price || item.productId?.price) * item.quantity).toFixed(2)}
+                  </div>
+                  <button 
+                    className="remove-btn"
+                    onClick={() => handleRemoveItem(item.productId?._id || item.productId)}
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          
+          <motion.div 
+            className="cart-actions-bar"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <button 
+              className="clear-cart-btn"
+              onClick={() => setShowClearConfirm(true)}
+            >
+              Vaciar Carrito
+            </button>
+            <button 
+              className="continue-shopping-btn"
               onClick={() => navigate('/products')}
             >
-              Ver Productos
-            </Button>
+              Seguir Comprando
+            </button>
+          </motion.div>
+        </div>
+
+        <motion.div 
+          className="cart-summary-section"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="summary-card glass-card">
+            <h2>Resumen del Pedido</h2>
+            <div className="summary-row">
+              <span>Subtotal</span>
+              <span>${cart.total.toFixed(2)}</span>
+            </div>
+            <div className="summary-row">
+              <span>Envío</span>
+              <span>Gratis</span>
+            </div>
+            <div className="summary-divider"></div>
+            <div className="summary-total">
+              <span>Total</span>
+              <span>${cart.total.toFixed(2)}</span>
+            </div>
+            
+            <button 
+              className="checkout-btn"
+              onClick={handleCheckout}
+              disabled={isCheckingOut || cart.items.length === 0}
+            >
+              {isCheckingOut ? (
+                <span className="spinner-small"></span>
+              ) : (
+                <>
+                  Proceder al Pago <FiArrowRight />
+                </>
+              )}
+            </button>
           </div>
-        ) : (
-          <>
-            <List className="cart-list">
-              {cart.items.map((item) => (
-                <ListItem key={item.productId?._id || item._id} className="cart-item">
-                  <Avatar
-                    src={item.image || item.productId?.image}
-                    alt={item.name || item.productId?.name}
-                    className="cart-avatar"
-                    onError={(e) => {
-                      e.target.src = '/images/placeholder-product.jpg';
-                    }}
-                  />
-                  <ListItemText
-                    primary={item.name || item.productId?.name}
-                    secondary={
-                      <>
-                        <div>${item.price || item.productId?.price}</div>
-                        <div className="cart-item-subtotal">
-                          Subtotal: ${((item.price || item.productId?.price) * item.quantity).toFixed(2)}
-                        </div>
-                        {item.productId?.stock !== undefined && (
-                          <div className={`stock-info ${item.productId.stock < item.quantity ? 'low-stock' : ''}`}>
-                            Stock disponible: {item.productId.stock}
-                          </div>
-                        )}
-                      </>
-                    }
-                    className="cart-item-text"
-                  />
-                  <ListItemSecondaryAction>
-                    <Box className="cart-quantity-box">
-                      <IconButton 
-                        onClick={() => handleUpdateQuantity(
-                          item.productId?._id || item.productId, 
-                          item.quantity - 1
-                        )} 
-                        className="icon-white"
-                        size="small"
-                        disabled={item.quantity <= 1}
-                      >
-                        <RemoveIcon />
-                      </IconButton>
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => {
-                          const newQuantity = parseInt(e.target.value) || 1;
-                          if (newQuantity >= 1) {
-                            handleUpdateQuantity(
-                              item.productId?._id || item.productId, 
-                              newQuantity
-                            );
-                          }
-                        }}
-                        className="cart-quantity-input"
-                        min="1"
-                      />
-                      <IconButton 
-                        onClick={() => handleUpdateQuantity(
-                          item.productId?._id || item.productId, 
-                          item.quantity + 1
-                        )} 
-                        className="icon-white"
-                        size="small"
-                        disabled={item.productId?.stock <= item.quantity}
-                      >
-                        <AddIcon />
-                      </IconButton>
-                      <IconButton 
-                        onClick={() => handleRemoveItem(
-                          item.productId?._id || item.productId
-                        )} 
-                        className="icon-delete"
-                        size="small"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
+        </motion.div>
+      </div>
 
-            <Divider className="cart-divider" />
-
-            <Box className="cart-summary">
-              <Typography variant="h5" className="cart-total">
-                Total: ${total.toFixed(2)}
-              </Typography>
-              <Box className="cart-actions">
-                <Button 
-                  onClick={() => setOpenConfirm(true)} 
-                  className="cart-clear-button"
-                  variant="outlined"
-                  color="error"
-                >
-                  Vaciar Carrito
-                </Button>
-                <Button
-                  onClick={handleCheckout}
-                  className="cart-checkout-button"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  disabled={cart.items.length === 0}
-                >
-                  Proceder al Pago
-                </Button>
-              </Box>
-            </Box>
-          </>
-        )}
-      </Paper>
-
-      <Dialog 
-        open={openConfirm} 
-        onClose={() => setOpenConfirm(false)}
-        PaperProps={{ className: 'cart-dialog' }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle className="dialog-title">
-          Vaciar Carrito
-        </DialogTitle>
-        <DialogContent className="dialog-content">
-          <Typography>
-            ¿Estás seguro de que quieres vaciar todo el carrito? Esta acción no se puede deshacer.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={() => setOpenConfirm(false)} 
-            className="dialog-button"
+      {/* Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="modal-overlay">
+          <motion.div 
+            className="modal-content glass-card"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
           >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleClearCart} 
-            className="dialog-button error"
-            variant="contained"
-            color="error"
-          >
-            Vaciar Carrito
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+            <h3>¿Vaciar carrito?</h3>
+            <p>¿Estás seguro de que quieres eliminar todos los productos?</p>
+            <div className="modal-actions">
+              <button onClick={() => setShowClearConfirm(false)} className="cancel-btn">
+                Cancelar
+              </button>
+              <button onClick={handleClearCart} className="confirm-btn">
+                Sí, vaciar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
   );
 };
 

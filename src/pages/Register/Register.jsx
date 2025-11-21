@@ -1,19 +1,18 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  Container,
-  Paper,
-  TextField,
-  Button,
-  Typography,
-  Box,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Button,
+  CircularProgress
 } from '@mui/material';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
+import { FiUser, FiMail, FiLock, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
 import './Register.css';
 
 const Register = () => {
@@ -28,16 +27,9 @@ const Register = () => {
   const [modalMsg, setModalMsg] = useState({ open: false, message: '', type: 'info' });
   const [loading, setLoading] = useState(false);
 
-  // ✅ Caracteres especiales permitidos (igual que en el backend)
   const SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
-  
-  // ✅ Función para escapar caracteres especiales en regex
   const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  
-  // ✅ Regex para validar caracteres especiales
   const specialCharsRegex = new RegExp(`[${escapeRegex(SPECIAL_CHARS)}]`);
-  
-  // ✅ Validación completa de contraseña (igual que el backend)
   const passwordRegex = new RegExp(
     `^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[${escapeRegex(SPECIAL_CHARS)}]).{8,}$`
   );
@@ -72,7 +64,6 @@ const Register = () => {
       return false;
     }
 
-    // ✅ Validación básica de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast.error('Por favor ingresa un correo electrónico válido');
@@ -80,7 +71,7 @@ const Register = () => {
     }
 
     if (!passwordRegex.test(password)) {
-      toast.error(`La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (${SPECIAL_CHARS}).`);
+      toast.error(`La contraseña no cumple con los requisitos de seguridad.`);
       return false;
     }
 
@@ -101,7 +92,6 @@ const Register = () => {
 
     setLoading(true);
     try {
-      // ✅ Usar la estructura correcta para el backend
       const result = await register({
         name: formData.name.trim(),
         email: formData.email.trim(),
@@ -114,7 +104,6 @@ const Register = () => {
           message: '✅ Registro exitoso. Bienvenido a J&L Clean Co.', 
           type: 'success' 
         });
-        // La navegación se manejará en el AuthContext después del registro exitoso
       } else {
         setModalMsg({ 
           open: true, 
@@ -136,175 +125,189 @@ const Register = () => {
 
   const handleModalClose = () => {
     setModalMsg({ ...modalMsg, open: false });
-    // ✅ Navegar al login si el registro fue exitoso
     if (modalMsg.type === 'success') {
       navigate('/login');
     }
   };
 
   return (
-    <Container maxWidth="sm" className="register-container">
-      <Paper className="register-card" elevation={0}>
-        <Typography variant="h4" component="h1" gutterBottom align="center" className="register-title">
-          Crear Cuenta
-        </Typography>
+    <div className="register-container">
+      <motion.div 
+        className="register-card glass-card"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <div className="register-header">
+          <motion.h1 
+            className="register-title"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            Crear Cuenta
+          </motion.h1>
+          <motion.p 
+            className="register-subtitle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            Únete a J&L Clean Co. y descubre nuestros productos
+          </motion.p>
+        </div>
 
-        <Typography variant="body1" align="center" color="textSecondary" sx={{ mb: 3 }}>
-          Únete a J&L Clean Co. y descubre nuestros productos de limpieza
-        </Typography>
-
-        <Box component="form" onSubmit={handleSubmit} className="register-form">
+        <form onSubmit={handleSubmit} className="register-form">
           <div className="form-field">
-            <label className="form-label">Nombre Completo *</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="Tu nombre completo"
-              required
-              disabled={loading}
-            />
+            <label className="form-label">Nombre Completo</label>
+            <div className="input-wrapper">
+              <FiUser className="input-icon" />
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="Tu nombre completo"
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
 
           <div className="form-field">
-            <label className="form-label">Correo Electrónico *</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="tu@email.com"
-              required
-              disabled={loading}
-            />
+            <label className="form-label">Correo Electrónico</label>
+            <div className="input-wrapper">
+              <FiMail className="input-icon" />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="tu@email.com"
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
 
           <div className="form-field">
-            <label className="form-label">Contraseña *</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="Crea una contraseña segura"
-              required
-              disabled={loading}
-            />
+            <label className="form-label">Contraseña</label>
+            <div className="input-wrapper">
+              <FiLock className="input-icon" />
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="Crea una contraseña segura"
+                required
+                disabled={loading}
+              />
+            </div>
+            
             {formData.password && (
-              <div className="password-requirements">
-                <h4 className="requirements-title">Requisitos de contraseña:</h4>
+              <motion.div 
+                className="password-requirements"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+              >
+                <h4 className="requirements-title">Requisitos:</h4>
                 <div className={`requirement ${passwordValidation.length ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon">
-                    {passwordValidation.length ? '✓' : '✗'}
-                  </span>
-                  Mínimo 8 caracteres
+                  {passwordValidation.length ? <FiCheck /> : <FiX />} Mínimo 8 caracteres
                 </div>
                 <div className={`requirement ${passwordValidation.lowercase ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon">
-                    {passwordValidation.lowercase ? '✓' : '✗'}
-                  </span>
-                  Una letra minúscula
+                  {passwordValidation.lowercase ? <FiCheck /> : <FiX />} Una minúscula
                 </div>
                 <div className={`requirement ${passwordValidation.uppercase ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon">
-                    {passwordValidation.uppercase ? '✓' : '✗'}
-                  </span>
-                  Una letra mayúscula
+                  {passwordValidation.uppercase ? <FiCheck /> : <FiX />} Una mayúscula
                 </div>
                 <div className={`requirement ${passwordValidation.number ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon">
-                    {passwordValidation.number ? '✓' : '✗'}
-                  </span>
-                  Un número
+                  {passwordValidation.number ? <FiCheck /> : <FiX />} Un número
                 </div>
                 <div className={`requirement ${passwordValidation.special ? 'valid' : 'invalid'}`}>
-                  <span className="requirement-icon">
-                    {passwordValidation.special ? '✓' : '✗'}
-                  </span>
-                  Un carácter especial ({SPECIAL_CHARS})
+                  {passwordValidation.special ? <FiCheck /> : <FiX />} Un carácter especial
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
 
           <div className="form-field">
-            <label className="form-label">Confirmar Contraseña *</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="Confirma tu contraseña"
-              required
-              disabled={loading}
-            />
-            {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-              <div className="message error">
-                ❌ Las contraseñas no coinciden
-              </div>
-            )}
-            {formData.confirmPassword && formData.password === formData.confirmPassword && (
-              <div className="message success">
-                ✅ Las contraseñas coinciden
+            <label className="form-label">Confirmar Contraseña</label>
+            <div className="input-wrapper">
+              <FiLock className="input-icon" />
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="Confirma tu contraseña"
+                required
+                disabled={loading}
+              />
+            </div>
+            {formData.confirmPassword && (
+              <div className={`password-match-status ${formData.password === formData.confirmPassword ? 'match' : 'no-match'}`}>
+                {formData.password === formData.confirmPassword ? (
+                  <><FiCheck /> Las contraseñas coinciden</>
+                ) : (
+                  <><FiX /> Las contraseñas no coinciden</>
+                )}
               </div>
             )}
           </div>
 
-          <button
-            type="submit"
-            className={`register-button ${loading ? 'loading' : ''}`}
+          <motion.button 
+            type="submit" 
+            className="register-button"
             disabled={loading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            {loading && <span className="loading-spinner"></span>}
-            {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
-          </button>
+            {loading ? <CircularProgress size={20} color="inherit" /> : 'Crear Cuenta'}
+          </motion.button>
 
           <div className="login-section">
-            <Typography variant="body2" align="center" color="textSecondary" sx={{ mb: 1 }}>
-              ¿Ya tienes una cuenta?
-            </Typography>
-            <Button
-              fullWidth
-              variant="outlined"
+            <p className="login-text">¿Ya tienes una cuenta?</p>
+            <button
+              type="button"
               onClick={() => navigate('/login')}
-              className="login-link"
+              className="login-link-btn"
               disabled={loading}
             >
               Iniciar Sesión
-            </Button>
+            </button>
           </div>
-        </Box>
-      </Paper>
+        </form>
+      </motion.div>
 
       <Dialog 
         open={modalMsg.open} 
         onClose={handleModalClose}
-        PaperProps={{ className: 'register-dialog' }}
+        PaperProps={{ className: 'glass-dialog' }}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle className={`dialog-title ${modalMsg.type}`}>
           {modalMsg.type === 'success' ? '🎉 ¡Registro Exitoso!' : '❌ Error'}
         </DialogTitle>
-        <DialogContent className="dialog-content">
-          <Typography variant="body1">{modalMsg.message}</Typography>
+        <DialogContent>
+          <p className="dialog-text">{modalMsg.message}</p>
         </DialogContent>
         <DialogActions>
           <Button 
             onClick={handleModalClose}
             className={`dialog-button ${modalMsg.type === 'success' ? 'success' : 'error'}`}
-            variant={modalMsg.type === 'success' ? 'contained' : 'outlined'}
+            variant="contained"
           >
             {modalMsg.type === 'success' ? 'Continuar' : 'Cerrar'}
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </div>
   );
 };
 
