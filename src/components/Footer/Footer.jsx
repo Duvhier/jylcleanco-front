@@ -10,7 +10,7 @@ import {
   FiMapPin,
   FiHeart
 } from 'react-icons/fi';
-import './Footer.css';
+import './FooterStyles.css';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
