@@ -120,6 +120,7 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="form-input"
+                placeholder="tu@email.com"
                 required
                 disabled={loading}
               />
@@ -136,6 +137,7 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="form-input"
+                placeholder="••••••••"
                 required
                 disabled={loading}
               />
@@ -194,6 +196,7 @@ const Login = () => {
                 value={forgotEmail}
                 onChange={e => setForgotEmail(e.target.value)}
                 className="form-input"
+                placeholder="tu@email.com"
                 autoFocus
                 disabled={loadingForgot}
               />

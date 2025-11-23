@@ -12,16 +12,29 @@ import {
   FiCheckCircle,
   FiXCircle,
   FiRefreshCw,
-  FiAlertCircle
+  FiAlertCircle,
+  FiCamera
 } from 'react-icons/fi';
 import { usersAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import './ManageUsers.css';
 
+import Modal from '../../components/Modal/Modal';
+
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    role: 'User',
+    isActive: true,
+    image: ''
+  });
+  
   const navigate = useNavigate();
   const { user: currentUser, isSuperUser } = useAuth();
 
@@ -92,7 +105,57 @@ const ManageUsers = () => {
   };
 
   const handleEditUser = (userId) => {
-    toast.info(`Editar usuario ${userId} - Funcionalidad en desarrollo`);
+    const userToEdit = users.find(u => u._id === userId);
+    if (userToEdit) {
+      setEditingUser(userToEdit);
+      setEditFormData({
+        name: userToEdit.name,
+        email: userToEdit.email,
+        role: userToEdit.role,
+        isActive: userToEdit.isActive !== false,
+        image: userToEdit.image || ''
+      });
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 500000) { // 500KB limit
+        toast.error('La imagen es demasiado grande (máx 500KB)');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditFormData({ ...editFormData, image: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    try {
+      const response = await usersAPI.update(editingUser._id, editFormData);
+      
+      if (response.data.success) {
+        toast.success('✅ Usuario actualizado exitosamente');
+        setUsers(users.map(u => 
+          u._id === editingUser._id ? { ...u, ...editFormData } : u
+        ));
+        setIsEditModalOpen(false);
+        setEditingUser(null);
+      } else {
+        toast.error(response.data.message || 'Error al actualizar el usuario');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error(error.response?.data?.message || 'Error al actualizar el usuario');
+    }
   };
 
   const handleToggleUserStatus = async (userId, currentStatus) => {
@@ -299,7 +362,11 @@ const ManageUsers = () => {
               >
                 <div className="user-header">
                   <div className="user-avatar">
-                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                    {user.image ? (
+                      <img src={user.image} alt={user.name} />
+                    ) : (
+                      user.name?.charAt(0).toUpperCase() || 'U'
+                    )}
                   </div>
                   <div className="user-main-info">
                     <h3 className="user-name">{user.name}</h3>
@@ -415,6 +482,105 @@ const ManageUsers = () => {
           </button>
         </motion.div>
       )}
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Editar Usuario"
+        size="medium"
+      >
+        <form onSubmit={handleUpdateUser} className="edit-user-form">
+          <div className="form-group image-upload-group">
+            <label>Foto de Perfil</label>
+            <div className="image-upload-container">
+              <div className="image-preview">
+                {editFormData.image ? (
+                  <img src={editFormData.image} alt="Vista previa" />
+                ) : (
+                  <div className="image-placeholder">
+                    {editFormData.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+              </div>
+              <label className="upload-btn">
+                <FiCamera />
+                <span>Cambiar Foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  hidden
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Nombre Completo</label>
+            <input
+              type="text"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+              required
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Correo Electrónico</label>
+            <input
+              type="email"
+              value={editFormData.email}
+              onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+              required
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Rol</label>
+            <select
+              value={editFormData.role}
+              onChange={(e) => setEditFormData({...editFormData, role: e.target.value})}
+              className="form-select"
+              disabled={editingUser?._id === currentUser?._id} // Prevent changing own role here too
+            >
+              <option value="User">Usuario</option>
+              <option value="Admin">Administrador</option>
+              <option value="SuperUser">Superusuario</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={editFormData.isActive}
+                onChange={(e) => setEditFormData({...editFormData, isActive: e.target.checked})}
+                disabled={editingUser?._id === currentUser?._id}
+              />
+              Usuario Activo
+            </label>
+          </div>
+
+          <div className="modal-actions">
+            <button 
+              type="button" 
+              className="modal-btn cancel"
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              className="modal-btn confirm"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -167,6 +167,7 @@ const Register = () => {
                 value={formData.name}
                 onChange={handleChange}
                 className="form-input"
+                placeholder="Tu nombre completo"
                 required
                 disabled={loading}
               />
@@ -183,6 +184,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="form-input"
+                placeholder="tu@email.com"
                 required
                 disabled={loading}
               />
@@ -199,6 +201,7 @@ const Register = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="form-input"
+                placeholder="Crea una contraseña segura"
                 required
                 disabled={loading}
               />
@@ -240,6 +243,7 @@ const Register = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className="form-input"
+                placeholder="Confirma tu contraseña"
                 required
                 disabled={loading}
               />

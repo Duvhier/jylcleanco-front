@@ -40,12 +40,13 @@
 .register-subtitle {
   font-size: 1rem;
   color: #64748b;
+  line-height: 1.5;
 }
 
 .register-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .form-field {
@@ -65,6 +66,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .input-icon {
@@ -74,20 +76,55 @@
   font-size: 1.1rem;
   pointer-events: none;
   transition: color 0.3s ease;
+  z-index: 2;
+  flex-shrink: 0;
 }
 
+/* SOLUCIÓN: Input con padding-left suficiente para el icono */
 .form-input {
   width: 100%;
-  padding: 0.85rem 1rem 0.85rem 3.5rem;
+  padding: 0.85rem 1rem 0.85rem 3rem;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   font-size: 1rem;
   color: #0f172a;
   background: rgba(255, 255, 255, 0.5);
   transition: all 0.3s ease;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-sizing: border-box;
 }
 
+/* CORRECCIÓN CRÍTICA: Placeholder con text-indent negativo para alineación */
+.form-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+  text-indent: 0;
+}
+
+/* Navegadores Webkit (Chrome, Safari) */
+.form-input::-webkit-input-placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Firefox */
+.form-input::-moz-placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+.form-input:-moz-placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Internet Explorer */
+.form-input:-ms-input-placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* IMPORTANTE: Cuando el input tiene contenido, el placeholder desaparece automáticamente */
 .form-input:focus {
   outline: none;
   border-color: #0f172a;
@@ -95,11 +132,90 @@
   box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
 }
 
-.form-input:focus+.input-icon,
 .input-wrapper:focus-within .input-icon {
   color: #0f172a;
 }
 
+/* Password Requirements */
+.password-requirements {
+  background: rgba(241, 245, 249, 0.8);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.requirements-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0;
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  transition: all 0.3s ease;
+}
+
+.requirement svg {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.requirement.valid {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.requirement.valid svg {
+  color: #10b981;
+}
+
+.requirement.invalid {
+  color: #ef4444;
+}
+
+.requirement.invalid svg {
+  color: #ef4444;
+}
+
+/* Password Match Status */
+.password-match-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.password-match-status.match {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.password-match-status.no-match {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.password-match-status svg {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Register Button */
 .register-button {
   margin-top: 1rem;
   background: #0f172a;
@@ -115,6 +231,7 @@
   justify-content: center;
   align-items: center;
   min-height: 50px;
+  font-family: 'Poppins', sans-serif;
 }
 
 .register-button:hover:not(:disabled) {
@@ -128,123 +245,80 @@
   cursor: not-allowed;
 }
 
-/* Password Requirements */
-.password-requirements {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1rem;
-  margin-top: 0.5rem;
-}
-
-.requirements-title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 0.75rem;
-}
-
-.requirement {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-bottom: 0.4rem;
-  transition: all 0.3s ease;
-}
-
-.requirement.valid {
-  color: #10b981;
-}
-
-.requirement.invalid {
-  color: #94a3b8;
-}
-
-.password-match-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 8px;
-}
-
-.password-match-status.match {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-}
-
-.password-match-status.no-match {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-/* Login Link */
+/* Login Section */
 .login-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
 }
 
 .login-text {
   font-size: 0.9rem;
   color: #64748b;
+  margin: 0;
 }
 
 .login-link-btn {
   background: none;
   border: none;
   color: #0f172a;
+  font-size: 0.9rem;
   font-weight: 600;
-  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: 'Poppins', sans-serif;
+  text-decoration: none;
 }
 
-.login-link-btn:hover {
+.login-link-btn:hover:not(:disabled) {
+  color: #64748b;
   text-decoration: underline;
+}
+
+.login-link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Dialog */
 .glass-dialog {
   border-radius: 20px !important;
-  padding: 1rem;
+  backdrop-filter: blur(12px) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
 }
 
 .dialog-title {
   font-family: 'Poppins', sans-serif !important;
   font-weight: 600 !important;
+  color: #0f172a !important;
   text-align: center;
 }
 
 .dialog-title.success {
-  color: #10b981;
+  color: #10b981 !important;
 }
 
 .dialog-title.error {
-  color: #ef4444;
+  color: #ef4444 !important;
 }
 
 .dialog-text {
-  color: #334155;
+  color: #64748b;
+  margin: 1rem 0 0 0;
+  line-height: 1.6;
   text-align: center;
-  font-size: 1.1rem;
-  line-height: 1.5;
 }
 
 .dialog-button {
-  width: 100%;
-  padding: 0.8rem !important;
-  border-radius: 10px !important;
-  font-family: 'Poppins', sans-serif !important;
-  font-weight: 600 !important;
   text-transform: none !important;
+  font-weight: 600 !important;
+  font-family: 'Poppins', sans-serif !important;
+  border-radius: 8px !important;
+  min-width: 120px !important;
 }
 
 .dialog-button.success {
@@ -252,18 +326,58 @@
   color: white !important;
 }
 
+.dialog-button.success:hover {
+  background: #059669 !important;
+}
+
 .dialog-button.error {
   background: #ef4444 !important;
   color: white !important;
 }
 
+.dialog-button.error:hover {
+  background: #dc2626 !important;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
+  .register-container {
+    padding: 1rem;
+  }
+
   .register-card {
     padding: 2rem;
+    max-width: 100%;
   }
 
   .register-title {
     font-size: 1.75rem;
+  }
+
+  .register-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .form-input {
+    padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+    font-size: 16px;
+  }
+
+  .input-icon {
+    left: 0.875rem;
+    font-size: 1rem;
+  }
+
+  .password-requirements {
+    padding: 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .requirements-title {
+    font-size: 0.8rem;
+  }
+
+  .requirement {
+    font-size: 0.8rem;
   }
 }
