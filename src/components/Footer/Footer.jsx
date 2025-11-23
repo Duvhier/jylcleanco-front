@@ -89,7 +89,7 @@ const Footer = () => {
               </li>
               <li>
                 <FiMail className="contact-icon" />
-                <span>contacto@jylclean.com</span>
+                <span>admin@jylclean.com</span>
               </li>
             </ul>
           </div>

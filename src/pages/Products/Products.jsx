@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { productsAPI, cartAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import './Products.css';
-import { FiGrid, FiSearch, FiFilter, FiShoppingCart } from 'react-icons/fi';
+import { FiGrid, FiSearch, FiFilter, FiShoppingCart, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
 import { GiSoap, GiCandleFlame, GiDrop } from 'react-icons/gi';
 import { MdAir, MdFace } from 'react-icons/md';
 import { CircularProgress, Box } from '@mui/material';
+import Modal from '../../components/Modal/Modal';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -21,6 +22,8 @@ const Products = () => {
   const [bestSellers, setBestSellers] = useState(false);
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState('checking');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [addedProduct, setAddedProduct] = useState(null);
 
   const checkConnection = async () => {
     try {
@@ -65,7 +68,7 @@ const Products = () => {
     }
   };
 
-  const handleAddToCart = async (productId) => {
+  const handleAddToCart = async (product) => {
     if (!isAuthenticated) {
       toast.error('Debes iniciar sesión para agregar productos al carrito');
       return;
@@ -73,10 +76,12 @@ const Products = () => {
 
     try {
       await cartAPI.add({ 
-        productId,
+        productId: product._id || product.id,
         quantity: 1,
       });
-      toast.success('✅ Producto agregado al carrito');
+      
+      setAddedProduct(product);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Error agregando al carrito:', error);
       
@@ -88,6 +93,11 @@ const Products = () => {
         toast.error('Error al agregar producto al carrito');
       }
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+    setAddedProduct(null);
   };
 
   useEffect(() => {
@@ -302,7 +312,7 @@ const Products = () => {
                     </span>
                     
                     <motion.button 
-                      onClick={() => handleAddToCart(product._id || product.id)}
+                      onClick={() => handleAddToCart(product)}
                       className="add-cart-btn"
                       disabled={product.stock <= 0 || !isAuthenticated}
                       whileTap={{ scale: 0.95 }}
@@ -317,6 +327,53 @@ const Products = () => {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Success Modal */}
+      <Modal
+        isOpen={showSuccessModal}
+        onClose={handleCloseModal}
+        title="¡Producto Agregado!"
+        size="small"
+      >
+        <div className="success-modal-content">
+          <div className="success-icon-wrapper">
+            <FiCheckCircle className="success-icon" />
+          </div>
+          
+          {addedProduct && (
+            <div className="added-product-preview">
+              <img 
+                src={addedProduct.image || '/images/placeholder-product.jpg'} 
+                alt={addedProduct.name} 
+                className="preview-image"
+              />
+              <div className="preview-details">
+                <h4>{addedProduct.name}</h4>
+                <p>${addedProduct.price}</p>
+              </div>
+            </div>
+          )}
+
+          <p className="success-message">
+            El producto se ha añadido correctamente a tu carrito de compras.
+          </p>
+
+          <div className="modal-actions-column">
+            <button 
+              onClick={() => window.location.href = '/cart'} 
+              className="modal-btn confirm full-width"
+            >
+              Ir al Carrito <FiArrowRight />
+            </button>
+            <button 
+              onClick={handleCloseModal} 
+              className="modal-btn cancel full-width"
+            >
+              Seguir Comprando
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

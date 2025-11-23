@@ -54,11 +54,17 @@ const SuperUserDashboard = () => {
 
       const totalProducts = productsResponse.data?.data?.length || 0;
       const totalUsers = usersResponse.data?.data?.length || 0;
-      const totalSales = salesResponse.data?.length || 0;
       
-      const totalRevenue = salesResponse.data?.reduce((sum, sale) => {
+      // Handle both direct array and { data: [...] } response formats for sales
+      const salesData = Array.isArray(salesResponse.data) 
+        ? salesResponse.data 
+        : (salesResponse.data?.data || []);
+        
+      const totalSales = salesData.length;
+      
+      const totalRevenue = salesData.reduce((sum, sale) => {
         return sum + (sale.total || 0);
-      }, 0) || 0;
+      }, 0);
 
       const activeAdmins = usersResponse.data?.data?.filter(user => 
         user.role === 'Admin' || user.role === 'SuperUser'

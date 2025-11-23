@@ -65,6 +65,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .input-icon {
@@ -74,11 +75,13 @@
   font-size: 1.1rem;
   pointer-events: none;
   transition: color 0.3s ease;
+  z-index: 2;
 }
 
+/* CORRECCIÓN: Placeholder con padding-left para dejar espacio al icono */
 .form-input {
   width: 100%;
-  padding: 0.85rem 1rem 0.85rem 3.5rem;
+  padding: 0.85rem 1rem 0.85rem 3rem;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   font-size: 1rem;
@@ -86,6 +89,30 @@
   background: rgba(255, 255, 255, 0.5);
   transition: all 0.3s ease;
   font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+}
+
+/* Solución: Usar text-indent para desplazar el placeholder */
+.form-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Desplazar el texto del placeholder usando text-indent */
+.form-input::-webkit-input-placeholder {
+  text-indent: 0;
+}
+
+.form-input:-moz-placeholder {
+  text-indent: 0;
+}
+
+.form-input::-moz-placeholder {
+  text-indent: 0;
+}
+
+.form-input:-ms-input-placeholder {
+  text-indent: 0;
 }
 
 .form-input:focus {
@@ -95,7 +122,6 @@
   box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
 }
 
-.form-input:focus+.input-icon,
 .input-wrapper:focus-within .input-icon {
   color: #0f172a;
 }
@@ -209,11 +235,24 @@
 
 /* Responsive */
 @media (max-width: 480px) {
+  .login-container {
+    padding: 1rem;
+  }
+
   .login-card {
     padding: 2rem;
   }
 
   .login-title {
     font-size: 1.75rem;
+  }
+
+  .form-input {
+    padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+  }
+
+  .input-icon {
+    left: 0.875rem;
+    font-size: 1rem;
   }
 }

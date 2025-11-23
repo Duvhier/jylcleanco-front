@@ -139,29 +139,6 @@ const Home = () => {
           ))}
         </div>
       </motion.section>
-
-      {/* CTA Section */}
-      <motion.section 
-        className="cta-section glass-card"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeInUp}
-      >
-        <h2 className="cta-title">¿Listo para descubrir más?</h2>
-        <p className="cta-subtitle">
-          Explora nuestro catálogo completo de productos y encuentra todo lo que necesitas 
-          para mantener tu hogar limpio, fresco y acogedor.
-        </p>
-        <motion.button 
-          className="cta-button" 
-          onClick={() => navigate('/products')}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Ver Todos los Productos
-        </motion.button>
-      </motion.section>
     </div>
   );
 };

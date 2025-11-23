@@ -74,6 +74,8 @@
   height: auto;
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
   transition: transform 0.5s ease;
+  border-radius: 15px 5px 15px 5px;
+  /* superior-izq superior-der inferior-der inferior-izq */
 }
 
 .hero-image:hover img {

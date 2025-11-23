@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fi';
 import { cartAPI, salesAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import Modal from '../../components/Modal/Modal';
 import './Cart.css';
 
 const Cart = () => {
@@ -312,26 +313,29 @@ const Cart = () => {
       </div>
 
       {/* Confirmation Modal */}
-      {showClearConfirm && (
-        <div className="modal-overlay">
-          <motion.div 
-            className="modal-content glass-card"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-          >
-            <h3>¿Vaciar carrito?</h3>
-            <p>¿Estás seguro de que quieres eliminar todos los productos?</p>
-            <div className="modal-actions">
-              <button onClick={() => setShowClearConfirm(false)} className="cancel-btn">
-                Cancelar
-              </button>
-              <button onClick={handleClearCart} className="confirm-btn">
-                Sí, vaciar
-              </button>
-            </div>
-          </motion.div>
+      <Modal
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        title="¿Vaciar carrito?"
+        size="small"
+      >
+        <div className="confirmation-content">
+          <div className="warning-icon-wrapper">
+            <FiAlertCircle className="warning-icon-large" />
+          </div>
+          <p className="confirmation-text">
+            ¿Estás seguro de que quieres eliminar todos los productos de tu carrito? Esta acción no se puede deshacer.
+          </p>
+          <div className="modal-actions">
+            <button onClick={() => setShowClearConfirm(false)} className="modal-btn cancel">
+              Cancelar
+            </button>
+            <button onClick={handleClearCart} className="modal-btn confirm delete">
+              Sí, vaciar
+            </button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };
